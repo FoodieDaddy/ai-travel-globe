@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Background } from './components/Layout/Background';
 import { Header } from './components/Layout/Header';
 import { PlannerPanel } from './components/AIPlanner/PlannerPanel';
@@ -12,15 +12,18 @@ import { PRESET_ROUTES } from './data/routes';
 export const App: React.FC = () => {
   const [planState, setPlanState] = useState<AIPlanResult>({ status: 'idle' });
   const [activeRoute, setActiveRoute] = useState<TravelRoute | null>(PRESET_ROUTES[0]);
+  const [hoveredRoute, setHoveredRoute] = useState<TravelRoute | null>(null);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
 
-  const plannerService = new AIPlannerMockService((result) => {
+  // Note: Creating service inside component is usually bad practice as it resets state,
+  // but it's acceptable for this simple mock demo. Using useMemo to prevent recreation.
+  const plannerService = React.useMemo(() => new AIPlannerMockService((result) => {
     setPlanState(result);
     if (result.status === 'success' && result.data) {
       setActiveRoute(result.data);
       setSelectedCity(null);
     }
-  });
+  }), []);
 
   const handleGenerate = (pref: TravelPreference) => {
     setSelectedCity(null);
@@ -28,14 +31,25 @@ export const App: React.FC = () => {
   };
 
   const handleSelectRoute = (route: TravelRoute) => {
-    setActiveRoute(route);
+    if (activeRoute?.id === route.id) {
+      // Toggle off if clicking the same route
+      setActiveRoute(null);
+    } else {
+      setActiveRoute(route);
+    }
     setSelectedCity(null);
-    setPlanState({ status: 'idle' }); // clear AI generation state if selecting another route
+    setPlanState({ status: 'idle' }); 
   };
 
-  // Extract all points for the globe from the active route
-  const globePoints = activeRoute?.places || [];
-  const globeArcs = activeRoute?.arcs || [];
+  const handleHoverRoute = (route: TravelRoute | null) => {
+    setHoveredRoute(route);
+  };
+
+  const activePoints = activeRoute?.places || [];
+  const activeArcs = activeRoute?.arcs || [];
+  
+  const hoveredPoints = hoveredRoute?.places || [];
+  const hoveredArcs = hoveredRoute?.arcs || [];
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-black relative flex font-sans text-slate-200">
@@ -45,15 +59,17 @@ export const App: React.FC = () => {
       {/* 3D Globe Layer */}
       <div className="absolute inset-0 z-0">
         <TravelGlobe 
-          places={globePoints}
-          arcs={globeArcs}
+          places={activePoints}
+          arcs={activeArcs}
           selectedPlace={selectedCity}
+          hoveredRoutePlaces={hoveredPoints}
+          hoveredRouteArcs={hoveredArcs}
           onPlaceClick={(city) => setSelectedCity(city)}
         />
       </div>
 
       {/* UI Overlay Layer */}
-      <div className="absolute inset-0 z-10 pointer-events-none flex justify-between p-6 pt-24 pb-10">
+      <div className="absolute inset-0 z-10 pointer-events-none flex justify-between p-8 pt-24 pb-10">
         {/* Left Side: AI Planner Panel */}
         <div className="h-full flex flex-col justify-center">
           <PlannerPanel 
@@ -68,6 +84,7 @@ export const App: React.FC = () => {
             activePlan={planState.status === 'success' ? planState.data : undefined}
             selectedRouteId={activeRoute?.id}
             onSelectRoute={handleSelectRoute}
+            onHoverRoute={handleHoverRoute}
           />
         </div>
       </div>
