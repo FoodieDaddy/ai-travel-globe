@@ -3,8 +3,8 @@ export type Language = 'zh' | 'en';
 export const translations = {
   zh: {
     // App Base
-    appName: 'Memory Atlas',
-    appDesc: '我的旅行记忆星球',
+    appName: 'Travel Memory Globe',
+    appDesc: '我的旅行记忆点亮地球',
     signIn: '登录',
     
     // Left Panel (Stats & Search)
@@ -46,8 +46,8 @@ export const translations = {
   },
   en: {
     // App Base
-    appName: 'Memory Atlas',
-    appDesc: 'My Travel Memory Planet',
+    appName: 'Travel Memory Globe',
+    appDesc: 'My Travel Memory Globe',
     signIn: 'Sign In',
     
     // Left Panel (Stats & Search)

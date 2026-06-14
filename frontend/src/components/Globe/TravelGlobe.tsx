@@ -8,330 +8,333 @@ interface Props {
   places: Place[]; 
   selectedPlace: Place | null;
   onPlaceClick: (place: Place) => void;
-  immersiveActive: boolean;
-  onReachPlace?: (place: Place, onSpeechEnd: () => void) => void;
+  revealedVisitedIds: string[];
+  revealedLines: any[];
 }
 
 // -------------------------------------------------------------
-// 经纬度与三维向量互转工具函数（用于大圆航线插值）
+// 射线检测算法：判断一个经纬度坐标是否在多边形内部
 // -------------------------------------------------------------
-function latLngToVector3(lat: number, lng: number): THREE.Vector3 {
-  const latRad = (lat * Math.PI) / 180;
-  const lngRad = (lng * Math.PI) / 180;
-  const x = Math.cos(latRad) * Math.cos(lngRad);
-  const y = Math.cos(latRad) * Math.sin(lngRad);
-  const z = Math.sin(latRad);
-  return new THREE.Vector3(x, y, z);
-}
-
-function vector3ToLatLng(v: THREE.Vector3): { lat: number; lng: number } {
-  const r = v.length();
-  const lat = Math.asin(v.z / r) * (180 / Math.PI);
-  const lng = Math.atan2(v.y, v.x) * (180 / Math.PI);
-  return { lat, lng };
-}
-
-// 两个坐标间的大圆航线 Slerp 插值
-function interpolateGeodesic(
-  p1: { lat: number; lng: number },
-  p2: { lat: number; lng: number },
-  steps: number
-): [number, number][] {
-  const v1 = latLngToVector3(p1.lat, p1.lng);
-  const v2 = latLngToVector3(p2.lat, p2.lng);
-  const points: [number, number][] = [];
-  const angle = v1.angleTo(v2);
-
-  if (angle < 0.001) {
-    for (let i = 0; i <= steps; i++) {
-      points.push([p1.lat, p1.lng]);
-    }
-    return points;
+function isPointInPolygon(point: [number, number], polygon: number[][][]): boolean {
+  const [x, y] = point;
+  let inside = false;
+  const ring = polygon[0]; // 外环
+  if (!ring) return false;
+  
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
   }
-
-  const sinAngle = Math.sin(angle);
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const f1 = Math.sin((1 - t) * angle) / sinAngle;
-    const f2 = Math.sin(t * angle) / sinAngle;
-    const vSlerp = new THREE.Vector3()
-      .addScaledVector(v1, f1)
-      .addScaledVector(v2, f2)
-      .normalize();
-    const coord = vector3ToLatLng(vSlerp);
-    points.push([coord.lat, coord.lng]);
-  }
-  return points;
-}
-
-// 计算两点之间的方位角（Bearing，弧度），用于旋转小车
-function getBearing(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const lat1Rad = (lat1 * Math.PI) / 180;
-  const lat2Rad = (lat2 * Math.PI) / 180;
-
-  const y = Math.sin(dLng) * Math.cos(lat2Rad);
-  const x =
-    Math.cos(lat1Rad) * Math.sin(lat2Rad) -
-    Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
-
-  return Math.atan2(y, x);
-}
-
-// -------------------------------------------------------------
-// 拼装 3D 卡车模型
-// -------------------------------------------------------------
-function createCarMesh(): THREE.Object3D {
-  const car = new THREE.Group();
-
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, // 视频中的白色车身
-    roughness: 0.3,
-    metalness: 0.4
-  });
-  
-  const cabinMat = new THREE.MeshStandardMaterial({
-    color: 0x1e293b, // 深色车窗
-    roughness: 0.1,
-    metalness: 0.9
-  });
-  
-  const wheelMat = new THREE.MeshStandardMaterial({
-    color: 0x0f172a, // 黑色轮胎
-    roughness: 0.9
-  });
-
-  const lightMat = new THREE.MeshBasicMaterial({
-    color: 0xfef08a // 黄色大灯
-  });
-
-  // 车身底盘 (长, 高, 宽)
-  const bodyGeom = new THREE.BoxGeometry(1.4, 0.45, 0.7);
-  const body = new THREE.Mesh(bodyGeom, bodyMat);
-  body.position.y = 0.225;
-  car.add(body);
-
-  // 车头驾驶室
-  const cabinGeom = new THREE.BoxGeometry(0.7, 0.45, 0.62);
-  const cabin = new THREE.Mesh(cabinGeom, cabinMat);
-  cabin.position.set(0.3, 0.675, 0);
-  car.add(cabin);
-
-  // 货箱或车尾盖板
-  const bedGeom = new THREE.BoxGeometry(0.65, 0.35, 0.62);
-  const bed = new THREE.Mesh(bedGeom, bodyMat);
-  bed.position.set(-0.325, 0.625, 0);
-  car.add(bed);
-
-  // 车前灯
-  const lightGeom = new THREE.BoxGeometry(0.08, 0.1, 0.1);
-  const lightL = new THREE.Mesh(lightGeom, lightMat);
-  lightL.position.set(0.71, 0.28, 0.22);
-  const lightR = lightL.clone();
-  lightR.position.z = -0.22;
-  car.add(lightL);
-  car.add(lightR);
-
-  // 4个轮子
-  const wheelGeom = new THREE.CylinderGeometry(0.16, 0.16, 0.12, 12);
-  wheelGeom.rotateX(Math.PI / 2); // 横向对齐
-  
-  const wFL = new THREE.Mesh(wheelGeom, wheelMat);
-  wFL.position.set(0.42, 0.16, 0.37);
-  
-  const wFR = wFL.clone();
-  wFR.position.z = -0.37;
-  
-  const wRL = wFL.clone();
-  wRL.position.x = -0.42;
-  
-  const wRR = wFR.clone();
-  wRR.position.x = -0.42;
-
-  car.add(wFL);
-  car.add(wFR);
-  car.add(wRL);
-  car.add(wRR);
-
-  // 整体微缩放置在地球表面
-  car.scale.set(0.8, 0.8, 0.8);
-
-  return car;
+  return inside;
 }
 
 export const TravelGlobe: React.FC<Props> = ({ 
   places, 
   selectedPlace, 
   onPlaceClick,
-  immersiveActive,
-  onReachPlace
+  revealedVisitedIds,
+  revealedLines
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<any>(null);
-  
-  // 动画状态引用，防止 effect 闭包
-  const animRef = useRef<{
-    active: boolean;
-    progress: number;
-    isSpeaking: boolean;
-    lastSpokenIndex: number;
-    roadCoords: [number, number][];
-    visitedPlaces: Place[];
-  }>({
-    active: false,
-    progress: 0,
-    isSpeaking: false,
-    lastSpokenIndex: -1,
-    roadCoords: [],
-    visitedPlaces: []
-  });
+  const [globeOpacity, setGlobeOpacity] = useState(0);
 
-  // 已打卡地点（按时间升序）
-  const visitedPlaces = useMemo(() => {
-    return [...places]
-      .filter(p => p.visited && p.visitedAt)
-      .sort((a, b) => a.visitedAt!.localeCompare(b.visitedAt!));
-  }, [places]);
-
-  // 计算连线公路的完整经纬度序列
-  const roadCoords = useMemo(() => {
-    if (visitedPlaces.length < 2) return [];
-    let allPoints: [number, number][] = [];
-    const STEPS_PER_SEGMENT = 80; // 每段插值80个点，保证小车跑得更丝滑
-
-    for (let i = 0; i < visitedPlaces.length - 1; i++) {
-      const segPoints = interpolateGeodesic(visitedPlaces[i], visitedPlaces[i+1], STEPS_PER_SEGMENT);
-      if (i > 0) {
-        allPoints = allPoints.concat(segPoints.slice(1));
-      } else {
-        allPoints = allPoints.concat(segPoints);
-      }
-    }
-    return allPoints;
-  }, [visitedPlaces]);
-
-  // 同步动画参数到 ref
+  // 1. 开场淡入效果
   useEffect(() => {
-    animRef.current.active = immersiveActive;
-    animRef.current.roadCoords = roadCoords;
-    animRef.current.visitedPlaces = visitedPlaces;
+    const timer = setTimeout(() => setGlobeOpacity(1), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 2. 算法计算陆地点阵与海洋底座坐标（一次生成，缓存使用）
+  const globeData = useMemo(() => {
+    const landPositions: number[] = [];
+    const landColors: number[] = [];
+    const baseSpherePositions: number[] = [];
     
-    if (!immersiveActive) {
-      // 退出沉浸式模式，重置动画参数
-      animRef.current.progress = 0;
-      animRef.current.isSpeaking = false;
-      animRef.current.lastSpokenIndex = -1;
-      if (globeRef.current) {
-        globeRef.current.customLayerData([]);
-        globeRef.current.controls().autoRotate = true;
+    const R = 100.15; // 陆地点阵稍微高于球体表面
+    const R_base = 100.0; // 海洋底座底面
+    const features = countriesData.features || [];
+    
+    // 预计算 bounding box 提升检测速度
+    const bboxes = features.map((f: any) => {
+      let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
+      const geom = f.geometry;
+      if (!geom) return { minLng, maxLng, minLat, maxLat, geom: null };
+      
+      const updateBBox = (ring: number[][]) => {
+        for (let p of ring) {
+          if (p[0] < minLng) minLng = p[0];
+          if (p[0] > maxLng) maxLng = p[0];
+          if (p[1] < minLat) minLat = p[1];
+          if (p[1] > maxLat) maxLat = p[1];
+        }
+      };
+      
+      if (geom.type === 'Polygon') {
+        updateBBox(geom.coordinates[0]);
+      } else if (geom.type === 'MultiPolygon') {
+        for (let poly of geom.coordinates) {
+          updateBBox(poly[0]);
+        }
       }
-    } else {
-      if (globeRef.current) {
-        globeRef.current.controls().autoRotate = false;
+      return { minLng, maxLng, minLat, maxLat, geom };
+    });
+
+    // A. 陆地高密度点阵生成 (步长 1.6)
+    const landStep = 1.6;
+    const leftColor = new THREE.Color(0xf59e0b);  // 暖橙色空间光
+    const rightColor = new THREE.Color(0x38bdf8); // 亮蓝色边缘光
+    const starColor = new THREE.Color(0xe2e8f0);  // 细密冷白光
+
+    for (let lat = -65; lat <= 75; lat += landStep) {
+      for (let lng = -180; lng <= 180; lng += landStep) {
+        // 添加随机 Jitter 位置扰动，形成更高级的星尘构成感
+        const jitterLat = (Math.random() - 0.5) * 0.4;
+        const jitterLng = (Math.random() - 0.5) * 0.4;
+        const finalLat = lat + jitterLat;
+        const finalLng = lng + jitterLng;
+
+        let inside = false;
+        for (let box of bboxes) {
+          if (!box.geom) continue;
+          if (finalLng >= box.minLng && finalLng <= box.maxLng && finalLat >= box.minLat && finalLat <= box.maxLat) {
+            if (box.geom.type === 'Polygon') {
+              if (isPointInPolygon([finalLng, finalLat], box.geom.coordinates)) {
+                inside = true;
+                break;
+              }
+            } else if (box.geom.type === 'MultiPolygon') {
+              for (let poly of box.geom.coordinates) {
+                if (isPointInPolygon([finalLng, finalLat], poly)) {
+                  inside = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
+        if (inside) {
+          const latRad = (finalLat * Math.PI) / 180;
+          const lngRad = (finalLng * Math.PI) / 180;
+          const x = R * Math.cos(latRad) * Math.cos(lngRad);
+          const y = R * Math.cos(latRad) * Math.sin(lngRad);
+          const z = R * Math.sin(latRad);
+          landPositions.push(x, y, z);
+
+          // 根据 X 坐标插值颜色，生成绚丽的左右冷暖渐变
+          const t = (x / R + 1) / 2;
+          const mixedColor = new THREE.Color().copy(leftColor).lerp(rightColor, t);
+          mixedColor.lerp(starColor, 0.4); // 混入冷白银光
+          landColors.push(mixedColor.r, mixedColor.g, mixedColor.b);
+        }
       }
     }
-  }, [immersiveActive, roadCoords, visitedPlaces]);
 
-  // 道路路径数据（三层叠加渲染双线公路车道）
+    // B. 海洋/基础球体稀疏点阵生成 (步长 4.0)，提供透明球体轮廓
+    const oceanStep = 4.0;
+    for (let lat = -80; lat <= 80; lat += oceanStep) {
+      for (let lng = -180; lng <= 180; lng += oceanStep) {
+        let inside = false;
+        for (let box of bboxes) {
+          if (!box.geom) continue;
+          if (lng >= box.minLng && lng <= box.maxLng && lat >= box.minLat && lat <= box.maxLat) {
+            if (box.geom.type === 'Polygon') {
+              if (isPointInPolygon([lng, lat], box.geom.coordinates)) {
+                inside = true;
+                break;
+              }
+            } else if (box.geom.type === 'MultiPolygon') {
+              for (let poly of box.geom.coordinates) {
+                if (isPointInPolygon([lng, lat], poly)) {
+                  inside = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // 仅添加海洋区域的灰蓝微尘
+        if (!inside) {
+          const latRad = (lat * Math.PI) / 180;
+          const lngRad = (lng * Math.PI) / 180;
+          const x = R_base * Math.cos(latRad) * Math.cos(lngRad);
+          const y = R_base * Math.cos(latRad) * Math.sin(lngRad);
+          const z = R_base * Math.sin(latRad);
+          baseSpherePositions.push(x, y, z);
+        }
+      }
+    }
+
+    return {
+      landPositions: new Float32Array(landPositions),
+      landColors: new Float32Array(landColors),
+      baseSpherePositions: new Float32Array(baseSpherePositions)
+    };
+  }, []);
+
+  // 3. 生成 procedure 经纬网格线（极淡）
+  const graticules = useMemo(() => {
+    const lines: any[] = [];
+    // 纬度线（每 30 度）
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const line = [];
+      for (let lng = -180; lng <= 180; lng += 10) {
+        line.push([lat, lng]);
+      }
+      lines.push({ points: line, type: 'graticule', color: 'rgba(224, 231, 255, 0.03)', stroke: 0.08 });
+    }
+    // 经度线（每 30 度）
+    for (let lng = -150; lng <= 180; lng += 30) {
+      const line = [];
+      for (let lat = -80; lat <= 80; lat += 10) {
+        line.push([lat, lng]);
+      }
+      lines.push({ points: line, type: 'graticule', color: 'rgba(224, 231, 255, 0.03)', stroke: 0.08 });
+    }
+    return lines;
+  }, []);
+
+  // 4. 合并经纬线和动态生长的游历时间线 (增加 HMR 健壮性)
   const pathsData = useMemo(() => {
-    if (roadCoords.length === 0) return [];
-    return [
-      // 1. 公路暗灰色地基
-      { points: roadCoords, color: 'rgba(15, 23, 42, 0.9)', stroke: 4.8 },
-      // 2. 公路两侧边缘白光
-      { points: roadCoords, color: 'rgba(14, 165, 233, 0.3)', stroke: 3.8 },
-      // 3. 中间白黄虚线
-      { points: roadCoords, color: 'rgba(255, 255, 255, 0.85)', stroke: 0.6, isDashed: true }
-    ];
-  }, [roadCoords]);
+    const lines = Array.isArray(revealedLines) ? revealedLines : [];
+    return [...graticules, ...lines];
+  }, [graticules, revealedLines]);
 
-  // 1. 初始化地球
+  // 5. 初始化地球并添加点阵网格
   useEffect(() => {
     if (!containerRef.current) return;
 
     // @ts-ignore
     const globe = Globe()(containerRef.current)
       .showAtmosphere(true)
-      .atmosphereColor('#0ea5e9') // 大气层颜色
+      .atmosphereColor('#38bdf8') // 柔和青蓝边缘光
       .atmosphereAltitude(0.18)
+      .globeImageUrl('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=') // 1x1 透明像素占位，清理默认彩色地球贴图
       
-      // 点阵大陆网格设置
-      .hexPolygonsData(countriesData.features)
-      .hexPolygonResolution(3)
-      .hexPolygonMargin(0.12)
-      .hexPolygonUseDots(true)
-      .hexPolygonColor(() => 'rgba(255, 255, 255, 0.28)')
-      .hexPolygonAltitude(0.005)
+      // 国界轮廓：仅显示极细的冷色描边
+      .polygonsData(countriesData.features)
+      .polygonAltitude(0.005)
+      .polygonCapColor(() => 'rgba(0, 0, 0, 0)')
+      .polygonSideColor(() => 'rgba(0, 0, 0, 0)')
+      .polygonStrokeColor(() => 'rgba(56, 189, 248, 0.18)') // 提亮轮廓大洲线，保持极细
 
-      // 景点标记点
+      // 景点点位展示
       .pointsData(places)
       .pointLat('lat')
       .pointLng('lng')
-      .pointRadius((d: any) => d.visited ? 0.9 : 0.45)
+      .pointRadius((d: any) => {
+        const isVisited = (revealedVisitedIds || []).includes(d.id);
+        const isSelected = selectedPlace?.id === d.id;
+        if (isSelected) return 1.25; // 选中略微变大
+        if (isVisited) return 0.75;  // 已打卡点增大
+        if (d.plannedDate) return 0.55; 
+        return 0.35; // 探索小点
+      })
       .pointAltitude(0.008)
       .pointColor((d: any) => {
-        if (d.visited) return '#f59e0b'; // 已打卡为暖黄色
-        if (d.plannedDate) return '#fb923c'; // 计划中为橙色
-        return 'rgba(241, 245, 249, 0.6)'; // 探索点为淡灰色
+        const isVisited = (revealedVisitedIds || []).includes(d.id);
+        if (isVisited) return '#f59e0b'; // 柔和暖金
+        if (d.plannedDate) return '#f97316'; // 计划去橙色
+        return 'rgba(70, 90, 120, 0.5)'; // 未去过灰蓝点，略微提亮
       })
-      
-      // 道路绘制
+
+      // hover 时只显示未去过的地点名称，已去过地点通过 HTML Badge 展示
+      .pointLabel((d: any) => {
+        const isVisited = (revealedVisitedIds || []).includes(d.id);
+        if (isVisited) return '';
+        return `<div class="px-2 py-1 rounded backdrop-blur-md bg-slate-950/90 border border-white/10 text-slate-200 text-[10.5px] font-sans">${d.name} · ${d.country}</div>`;
+      })
+
+      // 地图路线和经纬网格渲染 (支持虚线微粒子流动感)
       .pathsData(pathsData)
       .pathPoints(d => d.points)
       .pathPointLat(p => p[0])
       .pathPointLng(p => p[1])
       .pathColor(d => d.color)
       .pathStroke(d => d.stroke)
-      .pathDashLength(d => d.isDashed ? 0.35 : 0)
-      .pathDashGap(d => d.isDashed ? 0.25 : 0)
-      .pathDashAnimateTime(d => d.isDashed ? 2200 : 0)
+      .pathDashLength(d => d.dashLength || 0)
+      .pathDashGap(d => d.dashGap || 0)
+      .pathDashAnimateTime(d => d.dashAnimateTime || 0)
 
-      // 标签关闭
+      // 标签关闭，改由 HTML overlay 展示
       .labelsData([])
 
-      // 地球环状波动效果（仅针对已打卡点）
-      .ringsData(places.filter(p => p.visited))
+      // 脉冲波纹（仅在点亮地点处扩散）
+      .ringsData(places.filter(p => (revealedVisitedIds || []).includes(p.id)))
       .ringLat('lat')
       .ringLng('lng')
-      .ringColor(() => (t: number) => `rgba(245, 158, 11, ${0.18 - Math.sqrt(t) * 0.18})`)
-      .ringMaxRadius(2.2)
-      .ringPropagationSpeed(0.25)
-      .ringRepeatPeriod(2500);
+      .ringColor(() => (t: number) => `rgba(245, 158, 11, ${0.35 - Math.sqrt(t) * 0.35})`) // 波纹强度提升
+      .ringMaxRadius(3.0) // 增大到 3.0
+      .ringPropagationSpeed(0.18)
+      .ringRepeatPeriod(2600);
 
-    // 2. 自定义地球基底材质
+    // 6. 三维大洲渐变点阵大陆网格生成叠加 (高密度)
+    const pointsGeometry = new THREE.BufferGeometry();
+    pointsGeometry.setAttribute('position', new THREE.BufferAttribute(globeData.landPositions, 3));
+    pointsGeometry.setAttribute('color', new THREE.BufferAttribute(globeData.landColors, 3));
+    const pointsMaterial = new THREE.PointsMaterial({
+      size: 0.85, // 细密小点微调大
+      transparent: true,
+      opacity: 0.48, // 亮度提亮
+      vertexColors: true,
+      sizeAttenuation: true
+    });
+    const pointsMesh = new THREE.Points(pointsGeometry, pointsMaterial);
+    globe.scene().add(pointsMesh);
+
+    // 7. 三维海洋低底网格生成叠加 (低密度底座，勾勒球形)
+    const baseGeometry = new THREE.BufferGeometry();
+    baseGeometry.setAttribute('position', new THREE.BufferAttribute(globeData.baseSpherePositions, 3));
+    const baseMaterial = new THREE.PointsMaterial({
+      color: 0x2e4057, // 灰蓝微尘
+      size: 0.45,
+      transparent: true,
+      opacity: 0.15,
+      sizeAttenuation: true
+    });
+    const baseMesh = new THREE.Points(baseGeometry, baseMaterial);
+    globe.scene().add(baseMesh);
+
+    // 8. 地球底座材质 (深色透明球体底)
     const globeMaterial = globe.globeMaterial();
-    globeMaterial.color = new THREE.Color(0x060813); // 极深邃接近黑色的深蓝
+    globeMaterial.color = new THREE.Color(0x020512); // 深蓝黑
     globeMaterial.transparent = true;
-    globeMaterial.opacity = 0.92;
-    globeMaterial.roughness = 0.8;
-    globeMaterial.metalness = 0.1;
+    globeMaterial.opacity = 0.9;
+    globeMaterial.roughness = 0.95;
+    if (globeMaterial.map) {
+      globeMaterial.map = null;
+      globeMaterial.needsUpdate = true;
+    }
 
-    // 3. 增强冷暖对比光源
-    // 左侧红橙色聚光模拟日出晨曦
-    const orangeLight = new THREE.DirectionalLight(0xff5500, 2.5);
-    orangeLight.position.set(-300, 80, 80);
+    // 9. 柔和空间光源设计
+    // 左侧弱橙色辅助空间光
+    const orangeLight = new THREE.DirectionalLight(0xff5500, 1.8);
+    orangeLight.position.set(-250, 60, 50);
     globe.scene().add(orangeLight);
 
-    // 右侧冷青色聚光模拟太空冷光
+    // 右侧青蓝边缘光源
     const cyanLight = new THREE.DirectionalLight(0x0ea5e9, 2.5);
-    cyanLight.position.set(300, 80, 80);
+    cyanLight.position.set(250, 60, 50);
     globe.scene().add(cyanLight);
 
-    // 弱环境底光
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     globe.scene().add(ambientLight);
 
-    // 4. 地理层点击事件
     globe.onPointClick((d: any) => {
       onPlaceClick(d as Place);
     });
 
     globe.controls().autoRotate = true;
-    globe.controls().autoRotateSpeed = 0.4;
+    globe.controls().autoRotateSpeed = 0.28; // 轻微自转
     globe.controls().enableZoom = true;
     
-    // 默认初始视角
-    globe.pointOfView({ lat: 25, lng: 110, altitude: 1.15 }, 0);
+    // 初始展示东亚及太平洋板块，视界更贴近
+    globe.pointOfView({ lat: 26, lng: 125, altitude: 1.05 }, 0);
     
     globeRef.current = globe;
 
@@ -344,66 +347,63 @@ export const TravelGlobe: React.FC<Props> = ({
     window.addEventListener('resize', handleResize);
     handleResize();
 
-    // 5. 3D 小车及自定义图层初始化
-    globe.customLayerData([])
-      .customThreeObject(() => createCarMesh())
-      .customThreeObjectUpdate((obj, d: any) => {
-        obj.rotation.y = d.rotationY;
-      });
-
     return () => {
       window.removeEventListener('resize', handleResize);
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
       }
     };
-  }, []);
+  }, [globeData]); // 仅点阵生成一次后缓存，地球初始化一次
 
-  // 6. 动态更新过滤点位和道路数据
+  // 10. 动态同步状态数据
   useEffect(() => {
     if (!globeRef.current) return;
     globeRef.current.pointsData(places);
     globeRef.current.pathsData(pathsData);
-    globeRef.current.ringsData(places.filter(p => p.visited));
-  }, [places, pathsData]);
+    globeRef.current.ringsData(places.filter(p => (revealedVisitedIds || []).includes(p.id)));
+  }, [places, pathsData, revealedVisitedIds]);
 
-  // 7. 浮动在点位上的微缩图片标注
+  // 11. 浮动在点位旁边的小缩略图与标签指示
   useEffect(() => {
     if (!globeRef.current) return;
 
-    // 仅已打卡且有图片的点，或当前选中的点在地球上显示浮动缩略图
-    const htmlData = places.filter(p => (p.visited && p.userPhotos && p.userPhotos.length > 0) || selectedPlace?.id === p.id);
+    // 只给已点亮的地点，或有照片的，以及当前选中的地点渲染缩略图
+    const htmlData = places.filter(p => 
+      ((revealedVisitedIds || []).includes(p.id) && p.userPhotos && p.userPhotos.length > 0) || 
+      selectedPlace?.id === p.id
+    );
     
     globeRef.current.htmlElementsData(htmlData);
     globeRef.current.htmlElement((d: any) => {
       const el = document.createElement('div');
       const isSelected = selectedPlace?.id === d.id;
-      const hasPhoto = d.visited && d.userPhotos && d.userPhotos.length > 0;
+      const isVisited = (revealedVisitedIds || []).includes(d.id);
+      const hasPhoto = d.userPhotos && d.userPhotos.length > 0;
       
       el.className = `flex flex-col items-center justify-center transition-all duration-500 pointer-events-none ${
-        isSelected ? 'opacity-100 scale-110 z-50' : 'opacity-70 scale-90 z-10'
+        isSelected ? 'opacity-100 scale-105 z-50' : 'opacity-75 scale-90 z-10'
       }`;
       
-      let photoHtml = '';
-      if (hasPhoto) {
-        photoHtml = `
-          <div class="w-8 h-8 rounded-full border border-white/40 overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.6)] relative group-hover:scale-110 transition-transform duration-500 cursor-pointer pointer-events-auto">
+      let badgeHtml = '';
+      if (isVisited && hasPhoto) {
+        badgeHtml = `
+          <div class="w-8 h-8 rounded-full border-2 border-amber-400/60 overflow-hidden shadow-[0_0_12px_rgba(245,158,11,0.4)] relative cursor-pointer pointer-events-auto transition-transform duration-300 hover:scale-110">
              <img src="${d.userPhotos[0]}" class="w-full h-full object-cover" />
-             ${isSelected ? `<div class="absolute inset-0 border-2 border-amber-400 rounded-full"></div>` : ''}
+             ${isSelected ? `<div class="absolute inset-0 border-2 border-amber-400 rounded-full animate-pulse"></div>` : ''}
           </div>
         `;
       } else if (isSelected) {
-        photoHtml = `
-          <div class="w-4 h-4 rounded-full bg-amber-400 border border-white animate-pulse shadow-[0_0_8px_#fbbf24]"></div>
+        badgeHtml = `
+          <div class="w-3.5 h-3.5 rounded-full bg-amber-400 border border-white/80 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-ping"></div>
         `;
       }
 
       el.innerHTML = `
         <div class="flex flex-col items-center gap-1 group relative">
-          ${photoHtml}
+          ${badgeHtml}
           ${isSelected ? `
-            <div class="px-2 py-0.5 rounded backdrop-blur-md bg-black/60 border border-white/20 shadow-[0_4px_10px_rgba(0,0,0,0.6)] mt-0.5">
-              <span class="text-[9px] font-bold text-white tracking-wide">${d.name}</span>
+            <div class="px-2 py-0.5 rounded backdrop-blur-md bg-slate-950/90 border border-amber-400/40 shadow-[0_4px_12px_rgba(0,0,0,0.6)] mt-0.5">
+              <span class="text-[10px] font-bold text-amber-400 tracking-wide">${d.name}</span>
             </div>
           ` : ''}
         </div>
@@ -417,139 +417,33 @@ export const TravelGlobe: React.FC<Props> = ({
 
       return el;
     });
-  }, [places, selectedPlace]);
+  }, [places, selectedPlace, revealedVisitedIds]);
 
-  // 8. 非沉浸模式下，点击左侧或右侧卡片，摄像机聚焦旋转
+  // 12. 点击某个地点时，地球视角流畅飞越对焦
   useEffect(() => {
-    if (!globeRef.current || immersiveActive) return;
+    if (!globeRef.current) return;
     const controls = globeRef.current.controls();
 
     if (selectedPlace) {
-      controls.autoRotateSpeed = 0.05;
+      controls.autoRotateSpeed = 0.05; // 慢转
       globeRef.current.pointOfView({
         lat: selectedPlace.lat,
         lng: selectedPlace.lng,
-        altitude: 0.75
-      }, 900);
+        altitude: 0.65 // 贴近形成宏大对焦镜头感
+      }, 950);
     } else {
-      controls.autoRotateSpeed = 0.4;
+      controls.autoRotateSpeed = 0.28; // 恢复常规旋转
     }
-  }, [selectedPlace, immersiveActive]);
+  }, [selectedPlace]);
 
-  // 9. 沉浸式小车动画与追踪循环
-  useEffect(() => {
-    let animationFrameId: number;
-    
-    const tick = () => {
-      const { active, progress, isSpeaking, lastSpokenIndex, roadCoords, visitedPlaces } = animRef.current;
-      
-      if (!active || roadCoords.length === 0 || visitedPlaces.length === 0) {
-        animationFrameId = requestAnimationFrame(tick);
-        return;
-      }
-
-      // 如果正在进行语音播报，小车暂停在原地
-      if (isSpeaking) {
-        animationFrameId = requestAnimationFrame(tick);
-        return;
-      }
-
-      const totalSteps = roadCoords.length;
-      const STEPS_PER_SEGMENT = 80;
-
-      // 检查当前小车所在位置是否对应某个足迹点
-      // 每一个足迹点对应坐标序列中的 index = placeIndex * STEPS_PER_SEGMENT
-      const currentFloatIndex = progress;
-      const roundedIndex = Math.round(currentFloatIndex);
-      const placeIndex = roundedIndex / STEPS_PER_SEGMENT;
-
-      if (Number.isInteger(placeIndex) && placeIndex < visitedPlaces.length && roundedIndex !== lastSpokenIndex) {
-        const place = visitedPlaces[placeIndex];
-        
-        // 触发播报
-        animRef.current.isSpeaking = true;
-        animRef.current.lastSpokenIndex = roundedIndex;
-        
-        if (globeRef.current) {
-          // 摄像机极近对焦
-          globeRef.current.pointOfView({
-            lat: place.lat,
-            lng: place.lng,
-            altitude: 0.55
-          }, 800);
-        }
-
-        if (onReachPlace) {
-          onReachPlace(place, () => {
-            // 语音播报结束的回调，恢复小车行驶
-            animRef.current.isSpeaking = false;
-          });
-        } else {
-          // 如果没有播报组件，1.5秒后自动继续
-          setTimeout(() => {
-            animRef.current.isSpeaking = false;
-          }, 1500);
-        }
-
-        animationFrameId = requestAnimationFrame(tick);
-        return;
-      }
-
-      // 更新位置进度，速度设置为每帧前进 0.15 个单位
-      let newProgress = progress + 0.12;
-      
-      if (newProgress >= totalSteps - 1) {
-        // 到达终点，停止行驶
-        newProgress = totalSteps - 1;
-        animRef.current.active = false;
-      }
-
-      animRef.current.progress = newProgress;
-
-      // 插值计算当前坐标及下一步坐标以算出朝向
-      const index1 = Math.floor(newProgress);
-      const index2 = Math.min(index1 + 1, totalSteps - 1);
-      const ratio = newProgress - index1;
-
-      const coord1 = roadCoords[index1];
-      const coord2 = roadCoords[index2];
-
-      if (coord1 && coord2) {
-        const carLat = coord1[0] + (coord2[0] - coord1[0]) * ratio;
-        const carLng = coord1[1] + (coord2[1] - coord1[1]) * ratio;
-
-        // 计算方位角
-        const bearing = getBearing(coord1[0], coord1[1], coord2[0], coord2[1]);
-        // Y 轴本地旋转，对齐公路
-        const rotationY = Math.PI / 2 - bearing;
-
-        if (globeRef.current) {
-          // 更新 3D 小车
-          globeRef.current.customLayerData([{
-            lat: carLat,
-            lng: carLng,
-            altitude: 0.003,
-            rotationY
-          }]);
-
-          // 摄像机跟随镜头平滑转动
-          globeRef.current.pointOfView({
-            lat: carLat,
-            lng: carLng,
-            altitude: 0.62
-          }, 0);
-        }
-      }
-
-      animationFrameId = requestAnimationFrame(tick);
-    };
-
-    animationFrameId = requestAnimationFrame(tick);
-    
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [onReachPlace]);
-
-  return <div ref={containerRef} className="w-full h-full" />;
+  return (
+    <div 
+      ref={containerRef} 
+      className="w-full h-full" 
+      style={{ 
+        opacity: globeOpacity, 
+        transition: 'opacity 2.2s ease-in-out' 
+      }} 
+    />
+  );
 };

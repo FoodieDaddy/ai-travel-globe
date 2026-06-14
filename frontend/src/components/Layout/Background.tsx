@@ -30,10 +30,17 @@ export const Background: React.FC = () => {
       {/* Static very faint stars */}
       {stars}
 
+      {/* Gentle Warm Orange Glow on the Left */}
+      <div className="absolute top-1/3 left-0 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] pointer-events-none opacity-25">
+        <div className="absolute inset-0 rounded-full blur-[120px]" style={{
+          background: 'radial-gradient(circle, rgba(249, 115, 22, 0.06) 0%, rgba(239, 68, 68, 0.01) 50%, transparent 80%)'
+        }} />
+      </div>
+
       {/* Gentle Radial Glow behind the Earth (Center-Right) */}
-      <div className="absolute top-1/2 left-[60%] -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] max-w-[1200px] max-h-[1200px] pointer-events-none">
-        <div className="absolute inset-0 rounded-full blur-[100px] opacity-30" style={{
-          background: 'radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0.3) 40%, transparent 70%)'
+      <div className="absolute top-1/2 left-[62.5%] -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] max-w-[1200px] max-h-[1200px] pointer-events-none">
+        <div className="absolute inset-0 rounded-full blur-[100px] opacity-35" style={{
+          background: 'radial-gradient(circle, rgba(14, 165, 233, 0.16) 0%, rgba(15, 23, 42, 0.3) 40%, transparent 70%)'
         }} />
       </div>
 

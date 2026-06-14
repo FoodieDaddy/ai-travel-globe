@@ -1,148 +1,151 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Place } from '../../types/travel';
-import { MapPin, Eye, Globe2, Plane, X } from 'lucide-react';
+import { Compass, Layers, Image, Award } from 'lucide-react';
 
 interface Props {
   places: Place[];
   onPlaceSelect: (place: Place) => void;
-  onStartImmersive: () => void;
-  onResetView: () => void;
-  onClose?: () => void;
+  animateStats: boolean;
 }
+
+// 动画滚数子组件
+const AnimatedNumber: React.FC<{ value: number; trigger: boolean }> = ({ value, trigger }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (!trigger) {
+      setDisplayValue(0);
+      return;
+    }
+    let start = 0;
+    const end = value;
+    if (end === 0) return;
+
+    const duration = 1200; // 滚数持续时间
+    let startTime: number | null = null;
+
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      setDisplayValue(Math.floor(progress * (end - start) + start));
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    };
+
+    requestAnimationFrame(step);
+  }, [value, trigger]);
+
+  return <>{displayValue}</>;
+};
 
 export const MemoryStatsPanel: React.FC<Props> = ({ 
   places, 
-  onPlaceSelect, 
-  onStartImmersive,
-  onResetView,
-  onClose
+  onPlaceSelect,
+  animateStats
 }) => {
-  // 过滤出所有已打卡的地点，并按时间降序排序
   const visitedPlaces = useMemo(() => {
     return [...places]
       .filter(p => p.visited && p.visitedAt)
       .sort((a, b) => b.visitedAt!.localeCompare(a.visitedAt!));
   }, [places]);
 
-  // 动态统计指标
   const stats = useMemo(() => {
     const countries = new Set(visitedPlaces.map(p => p.country));
+    const photoCount = visitedPlaces.reduce((acc, p) => acc + (p.userPhotos?.length || 0), 0);
     return {
-      checkIns: visitedPlaces.length,
-      spots: visitedPlaces.length,
-      countries: countries.size
+      cities: visitedPlaces.length,
+      countries: countries.size,
+      photos: photoCount
     };
+  }, [visitedPlaces]);
+
+  // 获取最近的 3 条记录，显示为温暖的回忆摘要 (宽度足够，显示 3 条更饱满)
+  const recentMemories = useMemo(() => {
+    return visitedPlaces.slice(0, 3);
   }, [visitedPlaces]);
 
   return (
     <motion.div 
-      initial={{ x: 80, opacity: 0 }}
+      initial={{ x: -30, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 80, opacity: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-[360px] h-[calc(100vh-140px)] flex flex-col font-sans backdrop-blur-xl bg-slate-950/70 border border-white/10 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.65)] overflow-hidden relative pointer-events-auto"
+      transition={{ duration: 0.7, ease: "easeOut" }}
+      className="w-[300px] flex flex-col font-sans backdrop-blur-xl bg-slate-950/25 border border-white/15 rounded-2xl p-5 shadow-[0_16px_40px_rgba(0,0,0,0.5),0_0_20px_rgba(56,189,248,0.03)] pointer-events-auto select-none"
     >
-      {/* 顶部标题栏 */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-amber-400" />
-          <h2 className="text-lg font-bold text-white tracking-wide">我的旅行轨迹</h2>
-        </div>
-        {onClose && (
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all text-white/50 hover:text-white"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+      {/* 标题 */}
+      <div className="mb-4">
+        <h2 className="text-sm font-black text-white tracking-widest uppercase">Travel Memory Globe</h2>
+        <p className="text-[10px] text-white/60 tracking-wider mt-0.5 font-medium">我的旅行记忆点亮地球</p>
       </div>
 
-      {/* 滚动内容区域 */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-        {/* 三格统计 */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col items-center justify-center py-2.5 px-2 bg-white/[0.03] border border-white/5 rounded-xl text-center">
-            <span className="text-2xl font-bold font-mono text-amber-400">{stats.checkIns}</span>
-            <span className="text-[10px] text-white/40 mt-0.5">打卡次数</span>
+      {/* 统计浮格 (高对比度) */}
+      <div className="flex flex-col gap-3.5 mb-5 pt-3 border-t border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-400">
+            <Compass className="w-4 h-4" />
           </div>
-          <div className="flex flex-col items-center justify-center py-2.5 px-2 bg-white/[0.03] border border-white/5 rounded-xl text-center">
-            <span className="text-2xl font-bold font-mono text-amber-400">{stats.spots}</span>
-            <span className="text-[10px] text-white/40 mt-0.5">景点数量</span>
-          </div>
-          <div className="flex flex-col items-center justify-center py-2.5 px-2 bg-white/[0.03] border border-white/5 rounded-xl text-center">
-            <span className="text-2xl font-bold font-mono text-amber-400">{stats.countries}</span>
-            <span className="text-[10px] text-white/40 mt-0.5">到访国家</span>
+          <div className="flex flex-col">
+            <span className="text-[10.5px] text-white/60 font-semibold tracking-wider">已点亮城市</span>
+            <span className="text-xl font-bold font-mono text-white mt-0.5 leading-none">
+              <AnimatedNumber value={stats.cities} trigger={animateStats} />
+            </span>
           </div>
         </div>
 
-        {/* 2026 时间线 */}
-        <div className="space-y-4 relative pl-4">
-          {/* 左侧垂直线 */}
-          <div className="absolute left-1.5 top-2 bottom-2 w-0.5 bg-gradient-to-b from-amber-400/60 to-white/10"></div>
-          
-          <div className="text-[11px] font-bold text-amber-400/80 tracking-widest uppercase mb-1 -ml-1">2026</div>
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 rounded-lg bg-cyan-500/15 text-cyan-400">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10.5px] text-white/60 font-semibold tracking-wider">已到访国家/地区</span>
+            <span className="text-xl font-bold font-mono text-white mt-0.5 leading-none">
+              <AnimatedNumber value={stats.countries} trigger={animateStats} />
+            </span>
+          </div>
+        </div>
 
-          {visitedPlaces.map((place) => {
-            const hasPhoto = place.userPhotos && place.userPhotos.length > 0;
-            return (
-              <div key={place.id} className="relative group/timeline">
-                {/* 节点原点 */}
-                <div className="absolute -left-[18.5px] top-1.5 w-2.5 h-2.5 rounded-full bg-amber-400 border border-slate-950 group-hover/timeline:scale-125 transition-transform"></div>
-                
-                {/* 节点时间 */}
-                <div className="text-[10px] text-white/40 font-mono mb-1">{place.visitedAt}</div>
-                
-                {/* 节点卡片 */}
-                <button
-                  onClick={() => onPlaceSelect(place)}
-                  className="w-full text-left p-3.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 rounded-xl transition-all group/card flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
-                >
-                  <div>
-                    <h4 className="text-sm font-bold text-white/90 group-hover/card:text-amber-400 transition-colors">{place.name}</h4>
-                    <p className="text-[11px] text-white/40 mt-0.5">{place.country}</p>
-                  </div>
-                  {hasPhoto && (
-                    <div className="w-full h-20 rounded-lg overflow-hidden border border-white/10 shadow-inner">
-                      <img 
-                        src={place.userPhotos![0]} 
-                        alt={place.name} 
-                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700" 
-                      />
-                    </div>
-                  )}
-                </button>
-              </div>
-            );
-          })}
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400">
+            <Image className="w-4 h-4" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10.5px] text-white/60 font-semibold tracking-wider">已上传照片</span>
+            <span className="text-xl font-bold font-mono text-white mt-0.5 leading-none">
+              <AnimatedNumber value={stats.photos} trigger={animateStats} />
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 底部功能按钮区 */}
-      <div className="p-4 border-t border-white/5 bg-slate-950/40 grid grid-cols-3 gap-2">
-        <button 
-          onClick={onStartImmersive}
-          className="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 hover:border-amber-500/40 transition-all text-amber-300 font-medium group cursor-pointer"
-        >
-          <Eye className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-          <span className="text-[10px]">沉浸式体验</span>
-        </button>
-        <button 
-          onClick={onResetView}
-          className="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-white/15 transition-all text-white/70 hover:text-white group cursor-pointer"
-        >
-          <Globe2 className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-          <span className="text-[10px]">全局视角</span>
-        </button>
-        <button 
-          onClick={() => alert("飞线配置：已自动启用最高级发光虚线公路网络。")}
-          className="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-white/15 transition-all text-white/70 hover:text-white group cursor-pointer"
-        >
-          <Plane className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-          <span className="text-[10px]">飞线配置</span>
-        </button>
-      </div>
+      {/* 最近记录回忆摘要 */}
+      {recentMemories.length > 0 && (
+        <div className="pt-4 border-t border-white/10 space-y-3">
+          <div className="text-[9px] font-extrabold tracking-widest text-white/45 uppercase flex items-center gap-1">
+            <Award className="w-3.5 h-3.5 text-amber-400" />
+            <span>旅行回忆记录</span>
+          </div>
+          <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
+            {recentMemories.map((place) => (
+              <button
+                key={place.id}
+                onClick={() => onPlaceSelect(place)}
+                className="w-full text-left p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.07] border border-white/10 hover:border-amber-400/30 transition-all flex flex-col gap-1 cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white/90 group-hover:text-amber-400 transition-colors">{place.name}</span>
+                  <span className="text-[9.5px] text-white/40 font-mono">{place.visitedAt}</span>
+                </div>
+                {place.userNote && (
+                  <p className="text-[10.5px] text-white/60 leading-relaxed font-light line-clamp-2 italic group-hover:text-white/80 transition-colors">
+                    "{place.userNote}"
+                  </p>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };
