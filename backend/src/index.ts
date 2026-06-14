@@ -24,6 +24,10 @@ const GeneratePlanSchema = z.object({
   departureCity: z.string().optional(),
 });
 
+app.get('/', (req, res) => {
+  res.send('Backend API is running. Please open the frontend application in your browser (usually http://localhost:5174).');
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });

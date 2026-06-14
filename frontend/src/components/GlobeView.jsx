@@ -9,32 +9,41 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
     if (!containerRef.current) return;
 
     const globe = Globe()(containerRef.current)
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+      .showAtmosphere(true)
+      .atmosphereColor('#3b82f6')
+      .atmosphereAltitude(0.2)
       .pointsData(places)
       .pointLat('lat')
       .pointLng('lng')
-      .pointRadius(0.35)
-      .pointAltitude(0.05)
-      .pointLabel(d => `
-        <div style="background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; color: white;">
-          <b style="color: #60a5fa">${d.name}</b> - ${d.country}<br/>
-          <span>${d.days} 天</span><br/>
-          <span style="font-size: 12px; color: #cbd5e1">${d.description}</span>
-        </div>
-      `)
-      .pointColor(() => '#3b82f6')
+      .pointRadius(0.5)
+      .pointAltitude(0.01)
+      .pointColor(() => '#60a5fa')
       .onPointClick(onPlaceClick)
       .arcsData(arcs)
       .arcStartLat('startLat')
       .arcStartLng('startLng')
       .arcEndLat('endLat')
       .arcEndLng('endLng')
-      .arcColor(() => ['#60a5fa', '#a78bfa'])
-      .arcAltitude(0.25)
+      .arcColor(() => ['#3b82f6', '#8b5cf6'])
+      .arcAltitude(0.3)
       .arcDashLength(0.4)
       .arcDashGap(2)
-      .arcDashAnimateTime(1800);
+      .arcDashAnimateTime(2000)
+      .htmlElement(d => {
+        const el = document.createElement('div');
+        el.className = 'w-48 bg-slate-900/80 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden shadow-2xl transition-all hover:scale-105 pointer-events-auto cursor-pointer';
+        el.innerHTML = `
+          ${d.image ? `<img src="${d.image}" class="w-full h-24 object-cover" alt="${d.name}" />` : ''}
+          <div class="p-3">
+            <h3 class="text-white font-bold text-sm mb-1">${d.name}</h3>
+            <p class="text-slate-300 text-xs line-clamp-2">${d.description}</p>
+          </div>
+        `;
+        el.onclick = () => onPlaceClick(d);
+        return el;
+      });
 
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.5;
@@ -65,11 +74,26 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
   }, [places, arcs]);
 
   useEffect(() => {
-    if (!globeRef.current || !selectedPlace) return;
-    globeRef.current.pointOfView(
-      { lat: selectedPlace.lat, lng: selectedPlace.lng, altitude: 1.5 },
-      1200
-    );
+    if (!globeRef.current) return;
+    
+    // Show HTML card only for the selected place
+    globeRef.current.htmlElementsData(selectedPlace ? [selectedPlace] : []);
+    
+    // Show pulsing ring for the selected place
+    globeRef.current.ringsData(selectedPlace ? [selectedPlace] : [])
+      .ringLat('lat')
+      .ringLng('lng')
+      .ringColor(() => t => `rgba(96, 165, 250, ${1-t})`)
+      .ringMaxRadius(5)
+      .ringPropagationSpeed(3)
+      .ringRepeatPeriod(1000);
+
+    if (selectedPlace) {
+      globeRef.current.pointOfView(
+        { lat: selectedPlace.lat, lng: selectedPlace.lng, altitude: 1.5 },
+        1200
+      );
+    }
   }, [selectedPlace]);
 
   return <div ref={containerRef} className="w-full h-full" />;

@@ -13,7 +13,8 @@ export const demoPlan = {
       lng: 139.6503,
       days: 3,
       description: "适合动漫、购物和城市探索。",
-      tags: ["动漫", "美食", "城市"]
+      tags: ["动漫", "美食", "城市"],
+      image: "https://picsum.photos/seed/tokyo/400/300"
     },
     {
       id: "kyoto",
@@ -23,7 +24,8 @@ export const demoPlan = {
       lng: 135.7681,
       days: 2,
       description: "适合传统文化、神社和古街区。",
-      tags: ["文化", "寺庙", "摄影"]
+      tags: ["文化", "寺庙", "摄影"],
+      image: "https://picsum.photos/seed/kyoto/400/300"
     },
     {
       id: "osaka",
@@ -33,7 +35,8 @@ export const demoPlan = {
       lng: 135.5023,
       days: 2,
       description: "环球影城和道顿堀美食中心。",
-      tags: ["乐园", "美食", "购物"]
+      tags: ["乐园", "美食", "购物"],
+      image: "https://picsum.photos/seed/osaka/400/300"
     }
   ],
   arcs: [
