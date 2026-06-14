@@ -3,8 +3,8 @@ export type Language = 'zh' | 'en';
 export const translations = {
   zh: {
     // Landing
-    landingTitle: '让 AI 在地球上生成你的下一段旅行',
-    landingSubtitle: '输入时间、预算与偏好，AI 会为你生成可视化的全球路线。',
+    landingTitle: '一句话，生成你的全球旅行路线',
+    landingSubtitle: '输入时间、预算与偏好，AI 会在 3D 地球上生成可视化行程。',
     startPlanning: '开始规划',
     viewDemo: '查看演示',
     demoSummary: '亚洲灵感路线 · 14天 · 98% 匹配',
@@ -16,7 +16,7 @@ export const translations = {
     
     // Planner Panel
     promptLabel: '描述你的旅行愿景',
-    promptPlaceholder: '例如：我想从东京出发，14 天，预算中等，想去海岛、美食和小众城市...',
+    promptPlaceholder: '例如：我想从东京出发，14天，想去海岛、美食和城市夜景...',
     travelMode: '旅行模式',
     travelSignals: '旅行偏好信号',
     generateOrbit: '生成旅行路线',

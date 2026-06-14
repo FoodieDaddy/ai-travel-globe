@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
-  status: 'idle' | 'analyzing' | 'matching' | 'generating' | 'success' | 'error';
+  status: 'idle' | 'analyzing' | 'matching' | 'generating' | 'rendering' | 'success' | 'error';
   message?: string;
 }
 

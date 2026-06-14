@@ -4,22 +4,33 @@ export interface City {
   country: string;
   lat: number;
   lng: number;
-  image?: string;
   description?: string;
+  tags?: string[];
+  days?: number;
+  image?: string;
+  demoStep?: number;
 }
 
 export interface TravelRoute {
   id: string;
   title: string;
   summary: string;
-  destination: string;
-  days: number;
+  destination?: string;
   budget?: string;
   style?: string[];
+  days?: number;
+  matchScore?: string | number;
+  mood?: string;
+  pace?: string;
+  seasonFit?: string;
+  aiConfidence?: number | string;
+  costIndex?: number | string;
+  itinerary?: any[];
   places: (City & {
     days: number;
     description: string;
     tags: string[];
+    demoStep?: number;
   })[];
   arcs: {
     from: string;
@@ -29,18 +40,6 @@ export interface TravelRoute {
     endLat: number;
     endLng: number;
   }[];
-  itinerary: {
-    day: number;
-    city: string;
-    title: string;
-    items: string[];
-  }[];
-  matchScore?: number;
-  mood?: string;
-  pace?: string;
-  costIndex?: string;
-  seasonFit?: string;
-  aiConfidence?: string;
 }
 
 export interface TravelPreference {
@@ -52,7 +51,7 @@ export interface TravelPreference {
 }
 
 export interface AIPlanResult {
-  status: 'idle' | 'analyzing' | 'matching' | 'generating' | 'success' | 'error';
-  message?: string;
+  status: 'idle' | 'analyzing' | 'matching' | 'generating' | 'rendering' | 'success' | 'error';
   data?: TravelRoute;
+  message?: string;
 }

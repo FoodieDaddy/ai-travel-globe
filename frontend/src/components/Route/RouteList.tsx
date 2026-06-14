@@ -18,7 +18,7 @@ export const RouteList: React.FC<Props> = ({ activePlan }) => {
       initial={{ x: 50, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-      className="w-[480px] h-[calc(100vh-140px)] flex flex-col pointer-events-auto bg-[#020612]/30 backdrop-blur-[40px] rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative"
+      className="w-[420px] h-auto max-h-[calc(100vh-140px)] flex flex-col font-sans bg-[#020612]/30 backdrop-blur-[40px] rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden pointer-events-auto"
     >
       <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,

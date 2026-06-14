@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, ChevronUp, MessageSquareText } from 'lucide-react';
+import { Sparkles, Settings2 } from 'lucide-react';
 import { TravelPreference } from '../../types/travel';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -32,53 +32,65 @@ export const PlannerPanel: React.FC<Props> = ({ onGenerate, disabled }) => {
 
   return (
     <motion.div 
-      initial={{ x: -50, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      className="w-[400px] pointer-events-auto flex flex-col font-sans bg-[#020612]/30 backdrop-blur-[40px] rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative"
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+      className="w-full max-w-2xl font-sans"
     >
-      {/* Subtle Noise Overlay inside the panel */}
-      <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }} />
-
-      <form onSubmit={handleSubmit} className="p-8 text-sm text-slate-300 flex-1 overflow-y-auto custom-scrollbar relative z-10">
+      <form onSubmit={handleSubmit} className="relative z-10">
         
-        {/* Natural Language Prompt Input */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-4 text-sky-400">
-            <MessageSquareText className="w-5 h-5" />
-            <h3 className="text-base font-medium tracking-wide">{t('promptLabel')}</h3>
+        {/* Natural Language Prompt Input - Horizontal Bar */}
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-sky-400 to-purple-500 rounded-[2rem] blur-md opacity-40 group-hover:opacity-70 transition duration-1000 group-hover:duration-200"></div>
+          <div className="relative flex items-center bg-[#020612]/90 backdrop-blur-3xl rounded-[2rem] border border-white/20 p-2 shadow-2xl">
+            <textarea 
+              placeholder={t('promptPlaceholder')} 
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className="flex-1 bg-transparent text-slate-100 placeholder:text-slate-400 focus:outline-none text-lg px-6 py-4 resize-none h-[72px] leading-relaxed custom-scrollbar font-light"
+              required
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+            />
+            
+            <div className="flex items-center gap-3 pr-2">
+              <button 
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="w-14 h-14 flex items-center justify-center text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-2xl transition-all"
+                title={t('moreOptions')}
+              >
+                <Settings2 className="w-6 h-6" />
+              </button>
+              
+              <button 
+                type="submit" 
+                disabled={disabled || !prompt}
+                className="h-14 px-8 rounded-2xl bg-gradient-to-r from-sky-400 via-indigo-500 to-purple-600 text-white font-medium text-base tracking-wide flex items-center gap-2 shadow-[0_0_30px_rgba(14,165,233,0.5)] hover:shadow-[0_0_50px_rgba(168,85,247,0.8)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed overflow-hidden group/btn relative"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover/btn:animate-[scan_1s_ease-in-out_infinite]" />
+                <Sparkles className="w-5 h-5 relative z-10" />
+                <span className="whitespace-nowrap relative z-10 font-bold">{t('generateOrbit')}</span>
+              </button>
+            </div>
           </div>
-          <textarea 
-            placeholder={t('promptPlaceholder')} 
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-sky-500/50 focus:bg-black/30 transition-all text-sm font-light resize-none h-32 leading-relaxed"
-            required
-          />
         </div>
 
         {/* Collapsible Advanced Options */}
-        <div className="mb-8">
-          <button 
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider font-medium mb-4"
-          >
-            {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            {showAdvanced ? t('hideOptions') : t('moreOptions')}
-          </button>
-
-          <AnimatePresence>
-            {showAdvanced && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden space-y-6"
-              >
-                <div className="space-y-3 pt-2">
+        <AnimatePresence>
+          {showAdvanced && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0, y: -10 }}
+              animate={{ height: 'auto', opacity: 1, y: 0 }}
+              exit={{ height: 0, opacity: 0, y: -10 }}
+              className="overflow-hidden mt-4 bg-[#020612]/60 backdrop-blur-xl rounded-3xl border border-white/5 p-6 shadow-2xl"
+            >
+              <div className="space-y-6">
+                <div className="space-y-3">
                   <label className="text-xs text-slate-500 uppercase tracking-wider font-medium">{t('travelMode')}</label>
                   <div className="flex gap-2 p-1 bg-black/20 rounded-xl border border-white/5">
                     {BUDGETS.map(b => (
@@ -120,22 +132,10 @@ export const PlannerPanel: React.FC<Props> = ({ onGenerate, disabled }) => {
                     })}
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <button 
-          type="submit" 
-          disabled={disabled || !prompt}
-          className="w-full h-14 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-medium text-sm tracking-wide flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(14,165,233,0.3)] hover:shadow-[0_15px_40px_rgba(14,165,233,0.5)] transition-all duration-500 disabled:opacity-40 disabled:cursor-not-allowed group relative overflow-hidden"
-        >
-          <Sparkles className="w-4 h-4" />
-          {t('generateOrbit')}
-          
-          {/* Sweeping light effect */}
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-[scan_1.5s_ease-in-out_infinite]" />
-        </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </form>
     </motion.div>
   );
