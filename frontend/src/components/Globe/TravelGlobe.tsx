@@ -93,20 +93,20 @@ export const TravelGlobe: React.FC<Props> = ({
     const starColor = new THREE.Color(0xe2e8f0);  // 细密冷白光
 
     for (let i = 0; i < numPoints; i++) {
-      // 竖直轴 Z 在 1 至 -1 之间均匀分布
+      // 竖直轴 Y 在 1 至 -1 之间均匀分布 (Y 轴作为自转的南北极高度轴)
       const t = i / (numPoints - 1);
-      const z = 1 - t * 2;
+      const y = 1 - t * 2;
       
-      const radiusAtZ = Math.sqrt(1 - z * z);
+      const radiusAtY = Math.sqrt(1 - y * y);
       const angle = angleIncrement * i;
       
-      const x = Math.cos(angle) * radiusAtZ;
-      const y = Math.sin(angle) * radiusAtZ;
+      const x = Math.cos(angle) * radiusAtY;
+      const z = Math.sin(angle) * radiusAtY;
 
-      // 根据 ZXY 旋转坐标系映射，还原出经纬度用于大洲判定
-      const latRad = Math.asin(z);
+      // 反算经纬度 lat 和 lng 用于大洲 boundary 检测 (Z 轴正向为本初子午线，X 轴正向为东经 90 度)
+      const latRad = Math.asin(y);
       const lat = latRad * 180 / Math.PI;
-      const lngRad = Math.atan2(y, x);
+      const lngRad = Math.atan2(x, z);
       const lng = lngRad * 180 / Math.PI;
 
       let inside = false;
@@ -136,12 +136,12 @@ export const TravelGlobe: React.FC<Props> = ({
         const finalLat = lat + jitterLat;
         const finalLng = lng + jitterLng;
 
-        const finalLatRad = finalLat * Math.PI / 180;
-        const finalLngRad = finalLng * Math.PI / 180;
-
-        const px = R * Math.cos(finalLatRad) * Math.cos(finalLngRad);
-        const py = R * Math.cos(finalLatRad) * Math.sin(finalLngRad);
-        const pz = R * Math.sin(finalLatRad);
+        // 用 standard 经纬度转 3D 直角坐标公式 (Y 轴为南北极，本初子午线在 Z 轴正向)
+        const phi = (90 - finalLat) * Math.PI / 180;
+        const theta = (finalLng + 90) * Math.PI / 180;
+        const px = R * Math.sin(phi) * Math.sin(theta);
+        const py = R * Math.cos(phi);
+        const pz = R * Math.sin(phi) * Math.cos(theta);
 
         landPositions.push(px, py, pz);
 
@@ -151,7 +151,7 @@ export const TravelGlobe: React.FC<Props> = ({
         mixedColor.lerp(starColor, 0.5); // 增加亮色白光权重使其更亮
         landColors.push(mixedColor.r, mixedColor.g, mixedColor.b);
       } else {
-        // 海洋底座点：降低保留概率至 10%，使其显著更暗、更稀疏，仅起到弱化球体定位轮廓作用
+        // 海洋底座点：降低保留概率至 10%，使其显著更暗、更稀疏
         if (Math.random() < 0.10) {
           const px = R_base * x;
           const py = R_base * y;
@@ -181,12 +181,13 @@ export const TravelGlobe: React.FC<Props> = ({
             const lng = p1[0] + dLng * t;
             const lat = p1[1] + dLat * t;
             
-            const latRad = (lat * Math.PI) / 180;
-            const lngRad = (lng * Math.PI) / 180;
+            // 用 standard 经纬度转 3D 直角坐标公式 (Y 轴为南北极，本初子午线在 Z 轴正向)
+            const phi = (90 - lat) * Math.PI / 180;
+            const theta = (lng + 90) * Math.PI / 180;
             
-            const px = R_border * Math.cos(latRad) * Math.cos(lngRad);
-            const py = R_border * Math.cos(latRad) * Math.sin(lngRad);
-            const pz = R_border * Math.sin(latRad);
+            const px = R_border * Math.sin(phi) * Math.sin(theta);
+            const py = R_border * Math.cos(phi);
+            const pz = R_border * Math.sin(phi) * Math.cos(theta);
             
             borderPositions.push(px, py, pz);
           }
