@@ -20,7 +20,6 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
       .pointRadius(0.8)
       .pointAltitude(0.02)
       .pointColor(() => '#38bdf8')
-      .pointGlowRadius(2)
       .onPointClick(onPlaceClick)
       .arcsData(arcs)
       .arcStartLat('startLat')
