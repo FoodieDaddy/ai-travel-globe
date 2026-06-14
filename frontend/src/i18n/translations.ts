@@ -24,10 +24,14 @@ export const translations = {
     hideOptions: '收起选项',
     
     // HTML Floating Cards (Demo)
-    tokyoTags: '现代都市 / 美食 / 科技',
-    baliTags: '海岛 / 放松 / 日落',
-    singaporeTags: '花园城市 / 建筑 / 夜景',
-    shanghaiTags: '外滩 / 魔都 / 历史',
+    tokyoTags: '美食 / 夜景 / 科技',
+    tokyoDesc: '霓虹都市与深夜食堂的第一站。',
+    baliTags: '海岛 / 日落 / 放松',
+    baliDesc: '用日落和海风结束整段旅程。',
+    singaporeTags: '花园城市 / 建筑 / 夜游',
+    singaporeDesc: '未来感城市与热带夜景交汇。',
+    shanghaiTags: '外滩 / 都市 / 美食',
+    shanghaiDesc: '在城市天际线中切换旅行节奏。',
     
     // Budgets
     budgetLow: '经济',
@@ -50,6 +54,7 @@ export const translations = {
     matching: '正在匹配最佳城市...',
     generating: '正在计算路线节奏...',
     rendering: '正在生成 3D 轨道路线...',
+    routeReady: '路线已生成',
     
     // Route List
     aiRouteCandidates: 'AI 推荐路线',
@@ -91,10 +96,14 @@ export const translations = {
     hideOptions: 'Hide Options',
     
     // HTML Floating Cards (Demo)
-    tokyoTags: 'Modern / Food / Tech',
-    baliTags: 'Island / Relax / Sunset',
-    singaporeTags: 'Garden / Architecture / Night',
-    shanghaiTags: 'Bund / Magic City / History',
+    tokyoTags: 'Food / Nightscape / Tech',
+    tokyoDesc: 'First stop for neon lights and late-night diners.',
+    baliTags: 'Island / Sunset / Relax',
+    baliDesc: 'End your journey with sunsets and sea breeze.',
+    singaporeTags: 'Garden City / Architecture / Night Tour',
+    singaporeDesc: 'A blend of futuristic city and tropical nights.',
+    shanghaiTags: 'Bund / Urban / Food',
+    shanghaiDesc: 'Switch travel rhythms amidst the city skyline.',
     
     // Budgets
     budgetLow: 'Econ',
@@ -116,7 +125,8 @@ export const translations = {
     analyzing: 'Understanding your preferences...',
     matching: 'Matching optimal cities...',
     generating: 'Calculating route rhythm...',
-    rendering: 'Generating 3D orbital path...',
+    rendering: 'Rendering 3D orbit path...',
+    routeReady: 'Route ready',
     
     // Route List
     aiRouteCandidates: 'AI Route Candidates',

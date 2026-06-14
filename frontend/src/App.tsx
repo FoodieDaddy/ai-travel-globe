@@ -7,44 +7,37 @@ import { AIThinking } from './components/AIPlanner/AIThinking';
 import { RouteList } from './components/Route/RouteList';
 import { TravelGlobe } from './components/Globe/TravelGlobe';
 import { AIPlannerMockService } from './services/aiPlannerMock';
-import { AIPlanResult, TravelPreference, TravelRoute, City } from './types/travel';
+import { TravelPreference, TravelRoute, City } from './types/travel';
 import { PRESET_ROUTES } from './data/routes';
 import { useLanguage } from './i18n/LanguageContext';
-
-export type AppPhase = 'landing' | 'generating' | 'result';
+import { useTravelSceneMachine } from './scene/useTravelSceneMachine';
+import { TravelSceneState } from './scene/TravelSceneState';
 
 export const App: React.FC = () => {
   const { t } = useLanguage();
-  const [appPhase, setAppPhase] = useState<AppPhase>('landing');
-  const [planState, setPlanState] = useState<AIPlanResult>({ status: 'idle' });
+  const { sceneState, progress, renderStep, setRenderStep, startGeneration, resetHeroDemo } = useTravelSceneMachine();
+  
   const [activeRoute, setActiveRoute] = useState<TravelRoute | null>(null);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
 
-  // New state for progressive rendering
-  const [renderStep, setRenderStep] = useState<number>(0);
-
   const plannerService = useMemo(() => new AIPlannerMockService((result) => {
-    setPlanState(result);
-    
     if (result.status === 'success' && result.data) {
       setActiveRoute(result.data);
       setSelectedCity(null);
-      setAppPhase('result');
-      setRenderStep(0); // Start user route sequential animation
     }
   }), []);
 
   const handleGenerate = (pref: TravelPreference) => {
     setSelectedCity(null);
     setActiveRoute(null);
-    setRenderStep(-1);
-    setAppPhase('generating');
+    startGeneration();
     plannerService.generatePlan(pref);
   };
 
-  const currentRoute = appPhase === 'landing' ? PRESET_ROUTES[0] : activeRoute;
+  const isDemo = sceneState === TravelSceneState.HERO_DEMO;
+  const currentRoute = isDemo ? PRESET_ROUTES[0] : activeRoute;
 
-  // Handle Progressive Rendering of Route (Both Demo and Result)
+  // Handle Progressive Rendering of Route
   useEffect(() => {
     if (renderStep >= 0 && currentRoute) {
       const maxSteps = currentRoute.places.length + currentRoute.arcs.length;
@@ -55,10 +48,10 @@ export const App: React.FC = () => {
         }, 1200); // 1.2s per segment
         return () => clearTimeout(timer);
       } else {
-        if (appPhase === 'landing') {
+        if (isDemo) {
           // Loop the demo after holding for 5 seconds
           const holdTimer = setTimeout(() => {
-            setRenderStep(0);
+            resetHeroDemo();
           }, 5000);
           return () => clearTimeout(holdTimer);
         } else {
@@ -67,7 +60,7 @@ export const App: React.FC = () => {
         }
       }
     }
-  }, [renderStep, currentRoute, appPhase]);
+  }, [renderStep, currentRoute, isDemo, resetHeroDemo, setRenderStep]);
 
   // Compute displayed points and arcs based on renderStep
   let activePoints = currentRoute?.places || [];
@@ -78,19 +71,32 @@ export const App: React.FC = () => {
     const aCount = Math.floor((renderStep - 1) / 2) + 1;
     activePoints = currentRoute.places.slice(0, Math.max(0, pCount));
     
-    // For demo/presentation, we inject `demoStep` into cities to control when floating cards appear
+    // For progressive presentation, inject `demoStep` into cities
     activePoints = activePoints.map((p, idx) => ({ ...p, demoStep: idx * 2 }));
     
     activeArcs = currentRoute.arcs.slice(0, Math.max(0, aCount));
   }
 
-  // Right side demo summary visibility
-  const showDemoSummary = appPhase === 'landing' && currentRoute && renderStep >= (currentRoute.places.length + currentRoute.arcs.length - 1);
+  // Determine visibility of different UI elements based on state
+  const isLandingVisible = sceneState === TravelSceneState.IDLE || sceneState === TravelSceneState.HERO_DEMO;
+  const isAnalyzing = sceneState === TravelSceneState.ANALYZING || sceneState === TravelSceneState.SELECTING_CITIES;
+  const isGeneratingVisible = sceneState !== TravelSceneState.IDLE && sceneState !== TravelSceneState.HERO_DEMO && sceneState !== TravelSceneState.COMPLETE;
+  const showDemoSummary = isDemo && currentRoute && renderStep >= (currentRoute.places.length + currentRoute.arcs.length - 1);
+  const showResultRoute = sceneState === TravelSceneState.COMPLETE && activeRoute;
+
+  // Derive message for AI Thinking
+  let aiMessage = '';
+  if (sceneState === TravelSceneState.ANALYZING) aiMessage = t('analyzing');
+  if (sceneState === TravelSceneState.SELECTING_CITIES) aiMessage = t('matching');
+  if (sceneState === TravelSceneState.BUILDING_ROUTE) aiMessage = t('generating');
+  if (sceneState === TravelSceneState.RENDERING_PATH) aiMessage = t('rendering');
+  if (sceneState === TravelSceneState.COMPLETE) aiMessage = t('routeReady');
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-black relative flex font-sans text-slate-200">
       <Background />
-      <Header appPhase={appPhase} />
+      {/* We can map state to a simplified appPhase for Header, or update Header to not care */}
+      <Header appPhase={isLandingVisible ? 'landing' : (showResultRoute ? 'result' : 'generating')} />
 
       {/* 3D Globe Layer */}
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-visible">
@@ -100,10 +106,10 @@ export const App: React.FC = () => {
             arcs={activeArcs}
             selectedPlace={selectedCity}
             onPlaceClick={(city) => {
-              if (appPhase === 'result') setSelectedCity(city);
+              if (showResultRoute) setSelectedCity(city);
             }}
             isAnimating={renderStep >= 0}
-            appPhase={appPhase}
+            sceneState={sceneState}
             currentRenderStep={renderStep}
           />
         </div>
@@ -114,10 +120,10 @@ export const App: React.FC = () => {
         
         {/* Central Landing Elements (Hero Search Bar) */}
         <AnimatePresence>
-          {(appPhase === 'landing' || appPhase === 'generating') && (
+          {(isLandingVisible || isAnalyzing) && (
             <motion.div 
               initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
+              animate={{ opacity: 1, x: 0, filter: 'blur(0px)', scale: 1 }}
               exit={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="absolute left-[10%] top-1/2 -translate-y-1/2 pointer-events-auto max-w-2xl z-20"
@@ -131,7 +137,7 @@ export const App: React.FC = () => {
               
               <PlannerPanel 
                 onGenerate={handleGenerate} 
-                disabled={appPhase === 'generating'} 
+                disabled={isGeneratingVisible} 
               />
             </motion.div>
           )}
@@ -159,16 +165,16 @@ export const App: React.FC = () => {
 
         {/* Right Side: Route List */}
         <AnimatePresence>
-          {appPhase === 'result' && activeRoute && (
+          {showResultRoute && (
             <motion.div 
               initial={{ x: 100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 50, opacity: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.5 }}
               className="h-full flex flex-col justify-start ml-auto pointer-events-auto mt-4"
             >
               <RouteList 
-                activePlan={activeRoute}
+                activePlan={activeRoute!}
               />
             </motion.div>
           )}
@@ -176,7 +182,11 @@ export const App: React.FC = () => {
       </div>
 
       {/* Central Overlay: AI Thinking Animation */}
-      <AIThinking status={planState.status} message={planState.message} />
+      <AIThinking 
+        isVisible={isGeneratingVisible || (sceneState === TravelSceneState.COMPLETE && progress < 100)} 
+        message={aiMessage} 
+        progress={progress}
+      />
     </div>
   );
 };
