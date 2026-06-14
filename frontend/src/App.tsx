@@ -111,11 +111,21 @@ function App() {
   const [revealedLines, setRevealedLines] = useState<any[]>([]);
   const onboardingStarted = useRef<boolean>(false);
 
-  // 已打卡地点（升序排序，即：新加坡 -> 上海 -> 京都 -> 东京）
+  // 已打卡地点（显式排序：上海 -> 新加坡 -> 京都 -> 东京）
   const visitedOrdered = useMemo(() => {
+    const customOrder = ['p_shanghai', 'p_singapore', 'p_kyoto', 'p_tokyo'];
     return [...places]
-      .filter(p => p.visited && p.visitedAt)
-      .sort((a, b) => a.visitedAt!.localeCompare(b.visitedAt!));
+      .filter(p => p.visited)
+      .sort((a, b) => {
+        const indexA = customOrder.indexOf(a.id);
+        const indexB = customOrder.indexOf(b.id);
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return (a.visitedAt || '').localeCompare(b.visitedAt || '');
+      });
   }, [places]);
 
   useEffect(() => {
@@ -407,8 +417,8 @@ function App() {
       {/* 顶部 Branding 标题 */}
       <Header appPhase="planning" />
 
-      {/* 3D 点阵地球画布图层 (地球位于页面中心偏右，占满 78% 的主视觉区域) */}
-      <div className="absolute top-0 right-0 bottom-0 left-[22vw] z-0">
+      {/* 3D 点阵地球画布图层 (地球位于页面中心偏右，占满 60% 的主视觉区域，不被裁切) */}
+      <div className="absolute top-0 right-0 bottom-0 left-[40vw] z-0">
         <TravelGlobe 
           places={filteredPlaces}
           selectedPlace={selectedPlace}
@@ -425,13 +435,11 @@ function App() {
           {/* 左侧：我的打卡指标统计浮层 */}
           <div className="self-end justify-self-start">
             <AnimatePresence>
-              {onboardingFinished && (
-                <MemoryStatsPanel 
-                  places={places}
-                  onPlaceSelect={handlePlaceSelect}
-                  animateStats={onboardingFinished}
-                />
-              )}
+              <MemoryStatsPanel 
+                places={places}
+                onPlaceSelect={handlePlaceSelect}
+                animateStats={true}
+              />
             </AnimatePresence>
           </div>
 
@@ -455,15 +463,13 @@ function App() {
 
         {/* 底部 Dock 轻量地图工具栏 */}
         <AnimatePresence>
-          {onboardingFinished && (
-            <Dock 
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              onAddClick={() => setAddModalOpen(true)}
-            />
-          )}
+          <Dock 
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onAddClick={() => setAddModalOpen(true)}
+          />
         </AnimatePresence>
       </div>
 

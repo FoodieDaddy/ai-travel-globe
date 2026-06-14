@@ -47,8 +47,6 @@ export const TravelGlobe: React.FC<Props> = ({
     const timer = setTimeout(() => setGlobeOpacity(1), 100);
     return () => clearTimeout(timer);
   }, []);
-
-  // 2. 算法计算陆地点阵与海洋底座坐标（一次生成，缓存使用）
   const globeData = useMemo(() => {
     const landPositions: number[] = [];
     const landColors: number[] = [];
@@ -83,89 +81,80 @@ export const TravelGlobe: React.FC<Props> = ({
       return { minLng, maxLng, minLat, maxLat, geom };
     });
 
-    // A. 陆地高密度点阵生成 (步长 1.6)
-    const landStep = 1.6;
-    const leftColor = new THREE.Color(0xf59e0b);  // 暖橙色空间光
-    const rightColor = new THREE.Color(0x38bdf8); // 亮蓝色边缘光
+    // 斐波那契螺旋点阵生成 (12,000 均匀采样点)
+    const numPoints = 12000;
+    const goldenRatio = (1 + Math.sqrt(5)) / 2;
+    const angleIncrement = 2 * Math.PI * goldenRatio;
+
+    const leftColor = new THREE.Color(0xfed7aa);  // 暖橙色空间光（左侧）
+    const rightColor = new THREE.Color(0x38bdf8); // 亮蓝色边缘光（右侧）
     const starColor = new THREE.Color(0xe2e8f0);  // 细密冷白光
 
-    for (let lat = -65; lat <= 75; lat += landStep) {
-      for (let lng = -180; lng <= 180; lng += landStep) {
-        // 添加随机 Jitter 位置扰动，形成更高级的星尘构成感
-        const jitterLat = (Math.random() - 0.5) * 0.4;
-        const jitterLng = (Math.random() - 0.5) * 0.4;
+    for (let i = 0; i < numPoints; i++) {
+      // 竖直轴 Z 在 1 至 -1 之间均匀分布
+      const t = i / (numPoints - 1);
+      const z = 1 - t * 2;
+      
+      const radiusAtZ = Math.sqrt(1 - z * z);
+      const angle = angleIncrement * i;
+      
+      const x = Math.cos(angle) * radiusAtZ;
+      const y = Math.sin(angle) * radiusAtZ;
+
+      // 根据 ZXY 旋转坐标系映射，还原出经纬度用于大洲判定
+      const latRad = Math.asin(z);
+      const lat = latRad * 180 / Math.PI;
+      const lngRad = Math.atan2(y, x);
+      const lng = lngRad * 180 / Math.PI;
+
+      let inside = false;
+      for (let box of bboxes) {
+        if (!box.geom) continue;
+        if (lng >= box.minLng && lng <= box.maxLng && lat >= box.minLat && lat <= box.maxLat) {
+          if (box.geom.type === 'Polygon') {
+            if (isPointInPolygon([lng, lat], box.geom.coordinates)) {
+              inside = true;
+              break;
+            }
+          } else if (box.geom.type === 'MultiPolygon') {
+            for (let poly of box.geom.coordinates) {
+              if (isPointInPolygon([lng, lat], poly)) {
+                inside = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (inside) {
+        // 大洲陆地点：添加微量 Jitter 避免生成螺旋线纹理，显示为点阵地表数据
+        const jitterLat = (Math.random() - 0.5) * 0.15;
+        const jitterLng = (Math.random() - 0.5) * 0.15;
         const finalLat = lat + jitterLat;
         const finalLng = lng + jitterLng;
 
-        let inside = false;
-        for (let box of bboxes) {
-          if (!box.geom) continue;
-          if (finalLng >= box.minLng && finalLng <= box.maxLng && finalLat >= box.minLat && finalLat <= box.maxLat) {
-            if (box.geom.type === 'Polygon') {
-              if (isPointInPolygon([finalLng, finalLat], box.geom.coordinates)) {
-                inside = true;
-                break;
-              }
-            } else if (box.geom.type === 'MultiPolygon') {
-              for (let poly of box.geom.coordinates) {
-                if (isPointInPolygon([finalLng, finalLat], poly)) {
-                  inside = true;
-                  break;
-                }
-              }
-            }
-          }
-        }
-        
-        if (inside) {
-          const latRad = (finalLat * Math.PI) / 180;
-          const lngRad = (finalLng * Math.PI) / 180;
-          const x = R * Math.cos(latRad) * Math.cos(lngRad);
-          const y = R * Math.cos(latRad) * Math.sin(lngRad);
-          const z = R * Math.sin(latRad);
-          landPositions.push(x, y, z);
+        const finalLatRad = finalLat * Math.PI / 180;
+        const finalLngRad = finalLng * Math.PI / 180;
 
-          // 根据 X 坐标插值颜色，生成绚丽的左右冷暖渐变
-          const t = (x / R + 1) / 2;
-          const mixedColor = new THREE.Color().copy(leftColor).lerp(rightColor, t);
-          mixedColor.lerp(starColor, 0.4); // 混入冷白银光
-          landColors.push(mixedColor.r, mixedColor.g, mixedColor.b);
-        }
-      }
-    }
+        const px = R * Math.cos(finalLatRad) * Math.cos(finalLngRad);
+        const py = R * Math.cos(finalLatRad) * Math.sin(finalLngRad);
+        const pz = R * Math.sin(finalLatRad);
 
-    // B. 海洋/基础球体稀疏点阵生成 (步长 4.0)，提供透明球体轮廓
-    const oceanStep = 4.0;
-    for (let lat = -80; lat <= 80; lat += oceanStep) {
-      for (let lng = -180; lng <= 180; lng += oceanStep) {
-        let inside = false;
-        for (let box of bboxes) {
-          if (!box.geom) continue;
-          if (lng >= box.minLng && lng <= box.maxLng && lat >= box.minLat && lat <= box.maxLat) {
-            if (box.geom.type === 'Polygon') {
-              if (isPointInPolygon([lng, lat], box.geom.coordinates)) {
-                inside = true;
-                break;
-              }
-            } else if (box.geom.type === 'MultiPolygon') {
-              for (let poly of box.geom.coordinates) {
-                if (isPointInPolygon([lng, lat], poly)) {
-                  inside = true;
-                  break;
-                }
-              }
-            }
-          }
-        }
+        landPositions.push(px, py, pz);
 
-        // 仅添加海洋区域的灰蓝微尘
-        if (!inside) {
-          const latRad = (lat * Math.PI) / 180;
-          const lngRad = (lng * Math.PI) / 180;
-          const x = R_base * Math.cos(latRad) * Math.cos(lngRad);
-          const y = R_base * Math.cos(latRad) * Math.sin(lngRad);
-          const z = R_base * Math.sin(latRad);
-          baseSpherePositions.push(x, y, z);
+        // 顶点颜色渐变
+        const tCol = (px / R + 1) / 2;
+        const mixedColor = new THREE.Color().copy(leftColor).lerp(rightColor, tCol);
+        mixedColor.lerp(starColor, 0.45); // 混合冷白银光
+        landColors.push(mixedColor.r, mixedColor.g, mixedColor.b);
+      } else {
+        // 海洋底座点：以 25% 概率保留生成稀疏微尘，勾勒球体形状
+        if (Math.random() < 0.25) {
+          const px = R_base * x;
+          const py = R_base * y;
+          const pz = R_base * z;
+          baseSpherePositions.push(px, py, pz);
         }
       }
     }
@@ -264,11 +253,17 @@ export const TravelGlobe: React.FC<Props> = ({
       // 标签关闭，改由 HTML overlay 展示
       .labelsData([])
 
-      // 脉冲波纹（仅在点亮地点处扩散）
-      .ringsData(places.filter(p => (revealedVisitedIds || []).includes(p.id)))
+      // 脉冲波纹（仅在点亮地点或选中地点处扩散，显示柔和 pulse 光圈）
+      .ringsData(places.filter(p => (revealedVisitedIds || []).includes(p.id) || selectedPlace?.id === p.id))
       .ringLat('lat')
       .ringLng('lng')
-      .ringColor(() => (t: number) => `rgba(245, 158, 11, ${0.35 - Math.sqrt(t) * 0.35})`) // 波纹强度提升
+      .ringColor((d: any) => {
+        const isVisited = (revealedVisitedIds || []).includes(d.id);
+        if (isVisited) {
+          return (t: number) => `rgba(245, 158, 11, ${0.45 - Math.sqrt(t) * 0.45})`; // 柔和暖金
+        }
+        return (t: number) => `rgba(56, 189, 248, ${0.45 - Math.sqrt(t) * 0.45})`; // 柔和青蓝
+      })
       .ringMaxRadius(3.0) // 增大到 3.0
       .ringPropagationSpeed(0.18)
       .ringRepeatPeriod(2600);
@@ -333,8 +328,8 @@ export const TravelGlobe: React.FC<Props> = ({
     globe.controls().autoRotateSpeed = 0.28; // 轻微自转
     globe.controls().enableZoom = true;
     
-    // 初始展示东亚及太平洋板块，视界更贴近
-    globe.pointOfView({ lat: 26, lng: 125, altitude: 1.05 }, 0);
+    // 初始展示东亚及太平洋板块，球体完整显示且大小适中
+    globe.pointOfView({ lat: 26, lng: 125, altitude: 1.75 }, 0);
     
     globeRef.current = globe;
 
@@ -360,8 +355,8 @@ export const TravelGlobe: React.FC<Props> = ({
     if (!globeRef.current) return;
     globeRef.current.pointsData(places);
     globeRef.current.pathsData(pathsData);
-    globeRef.current.ringsData(places.filter(p => (revealedVisitedIds || []).includes(p.id)));
-  }, [places, pathsData, revealedVisitedIds]);
+    globeRef.current.ringsData(places.filter(p => (revealedVisitedIds || []).includes(p.id) || selectedPlace?.id === p.id));
+  }, [places, pathsData, revealedVisitedIds, selectedPlace]);
 
   // 11. 浮动在点位旁边的小缩略图与标签指示
   useEffect(() => {
@@ -429,7 +424,7 @@ export const TravelGlobe: React.FC<Props> = ({
       globeRef.current.pointOfView({
         lat: selectedPlace.lat,
         lng: selectedPlace.lng,
-        altitude: 0.65 // 贴近形成宏大对焦镜头感
+        altitude: 1.25 // 精致聚焦且保持球体不被裁切
       }, 950);
     } else {
       controls.autoRotateSpeed = 0.28; // 恢复常规旋转
