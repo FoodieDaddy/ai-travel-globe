@@ -1,11 +1,19 @@
-import { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import Globe from 'globe.gl';
+import { City } from '../../types/travel';
 
-export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
-  const containerRef = useRef(null);
-  const globeRef = useRef(null);
+interface Props {
+  places: City[];
+  arcs: any[];
+  selectedPlace: City | null;
+  onPlaceClick: (city: City) => void;
+}
 
-  // Generate background dots for cyber look
+export const TravelGlobe: React.FC<Props> = ({ places, arcs, selectedPlace, onPlaceClick }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const globeRef = useRef<any>(null);
+
+  // Background dots for cyber look
   const bgDots = useMemo(() => {
     return Array.from({ length: 800 }).map(() => ({
       lat: (Math.random() - 0.5) * 180,
@@ -21,7 +29,7 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
 
   useEffect(() => {
     if (!containerRef.current) return;
-
+    // @ts-ignore
     const globe = Globe()(containerRef.current)
       .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
@@ -31,11 +39,11 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
       .pointsData(allPoints)
       .pointLat('lat')
       .pointLng('lng')
-      .pointRadius(d => d.isBg ? d.size : 0.8)
-      .pointAltitude(d => d.isBg ? 0.01 : 0.02)
-      .pointColor(d => d.isBg ? '#1e3a8a' : '#38bdf8')
-      .onPointClick((d) => {
-        if (!d.isBg && onPlaceClick) onPlaceClick(d);
+      .pointRadius((d: any) => d.isBg ? d.size : 0.8)
+      .pointAltitude((d: any) => d.isBg ? 0.01 : 0.02)
+      .pointColor((d: any) => d.isBg ? '#1e3a8a' : '#38bdf8')
+      .onPointClick((d: any) => {
+        if (!d.isBg && onPlaceClick) onPlaceClick(d as City);
       })
       .arcsData(arcs)
       .arcStartLat('startLat')
@@ -47,13 +55,11 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
       .arcDashLength(0.4)
       .arcDashGap(2)
       .arcDashAnimateTime(2000)
-      .htmlElement(d => {
+      .htmlElement((d: any) => {
         const el = document.createElement('div');
         el.className = 'w-64 glass-card rounded-2xl overflow-hidden transition-all hover:scale-105 pointer-events-auto cursor-pointer group relative';
         el.innerHTML = `
-          <!-- Tech corner accent -->
           <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-blue-400 rounded-tl-2xl z-20 opacity-50"></div>
-          
           ${d.image ? `<div class="relative h-32 overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent z-10"></div>
             <img src="${d.image}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="${d.name}" />
@@ -63,17 +69,17 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
             </div>
             <h3 class="text-white font-bold text-lg mb-1 tracking-wide">${d.name}</h3>
-            <p class="text-blue-300/80 text-[10px] font-mono-tech mb-2 tracking-widest uppercase border-b border-white/10 pb-2">COORD: ${d.lat.toFixed(2)}, ${d.lng.toFixed(2)}</p>
+            <p class="text-blue-300/80 text-[10px] font-mono-tech mb-2 tracking-widest uppercase border-b border-white/10 pb-2">COORD: ${Number(d.lat).toFixed(2)}, ${Number(d.lng).toFixed(2)}</p>
             <p class="text-slate-300/90 text-sm line-clamp-2 leading-relaxed font-light">${d.description}</p>
           </div>
         `;
-        el.onclick = () => onPlaceClick(d);
+        el.onclick = () => onPlaceClick(d as City);
         return el;
       });
 
     globe.controls().autoRotate = true;
-    globe.controls().autoRotateSpeed = 0.05; // Slow down rotation significantly
-    globe.controls().enableZoom = true; // Allow zoom so users can explore
+    globe.controls().autoRotateSpeed = 0.05;
+    globe.controls().enableZoom = true;
     globeRef.current = globe;
 
     const handleResize = () => {
@@ -91,9 +97,8 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
         containerRef.current.innerHTML = '';
       }
     };
-  }, []); // Re-initialize only on mount
+  }, []);
 
-  // Update points/arcs dynamically
   useEffect(() => {
     if (!globeRef.current) return;
     globeRef.current.pointsData(allPoints);
@@ -103,28 +108,33 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
   useEffect(() => {
     if (!globeRef.current) return;
     
-    // Show HTML card only for the selected place
     globeRef.current.htmlElementsData(selectedPlace ? [selectedPlace] : []);
     
-    // Show pulsing ring for the selected place
     globeRef.current.ringsData(selectedPlace ? [selectedPlace] : [])
       .ringLat('lat')
       .ringLng('lng')
-      .ringColor(() => t => `rgba(56, 189, 248, ${1-Math.sqrt(t)})`)
+      .ringColor(() => (t: number) => `rgba(56, 189, 248, ${1-Math.sqrt(t)})`)
       .ringMaxRadius(8)
       .ringPropagationSpeed(3)
       .ringRepeatPeriod(1000);
 
     if (selectedPlace) {
-      // Use setTimeout to ensure globe is fully rendered before jumping
       setTimeout(() => {
         globeRef.current.pointOfView(
           { lat: selectedPlace.lat, lng: selectedPlace.lng, altitude: 1.8 },
           1500
         );
       }, 100);
+    } else if (places.length > 0) {
+      // If a route is selected but no specific place, fly to the first place of the route
+      setTimeout(() => {
+        globeRef.current.pointOfView(
+          { lat: places[0].lat, lng: places[0].lng, altitude: 2.5 },
+          2000
+        );
+      }, 100);
     }
-  }, [selectedPlace]);
+  }, [selectedPlace, places]);
 
   return <div ref={containerRef} className="w-full h-full" />;
-}
+};
