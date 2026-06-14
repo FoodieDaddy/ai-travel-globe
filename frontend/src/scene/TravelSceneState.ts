@@ -1,9 +1,8 @@
 export enum TravelSceneState {
-  IDLE = "IDLE", // Waiting for initial load
-  HERO_DEMO = "HERO_DEMO", // Automatic route demonstration on landing page
-  ANALYZING = "ANALYZING", // User clicked generate, starting to understand
-  SELECTING_CITIES = "SELECTING_CITIES", // Matching optimal cities (scanning effect)
-  BUILDING_ROUTE = "BUILDING_ROUTE", // Calculating route rhythm
-  RENDERING_PATH = "RENDERING_PATH", // 3D orbit rendering
-  COMPLETE = "COMPLETE" // Route fully ready, displaying summary card
+  IDLE = 'idle',
+  VIEWING_PLACE = 'viewing_place'
 }
+
+export const useTravelSceneMachine = () => {
+  return null; // We can actually just remove this hook entirely, but keep the enum if needed or just simplify everything in App.tsx.
+};

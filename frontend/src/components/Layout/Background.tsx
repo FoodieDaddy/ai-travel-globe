@@ -1,12 +1,39 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 export const Background: React.FC = () => {
+  // Generate some faint static stars
+  const stars = useMemo(() => {
+    return Array.from({ length: 150 }).map((_, i) => {
+      const top = Math.random() * 100;
+      const left = Math.random() * 100;
+      const size = Math.random() * 2 + 0.5;
+      const opacity = Math.random() * 0.4 + 0.1;
+      return (
+        <div 
+          key={i} 
+          className="absolute rounded-full bg-white" 
+          style={{
+            top: `${top}%`,
+            left: `${left}%`,
+            width: `${size}px`,
+            height: `${size}px`,
+            opacity: opacity
+          }} 
+        />
+      );
+    });
+  }, []);
+
   return (
     <div className="fixed inset-0 z-0 pointer-events-none bg-[#020612] overflow-hidden">
-      {/* Massive soft halo */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140vw] h-[140vw] max-w-[1400px] max-h-[1400px] pointer-events-none">
-        <div className="absolute inset-0 rounded-full blur-[120px] opacity-40" style={{
-          background: 'radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(30, 58, 138, 0.1) 40%, transparent 70%)'
+      
+      {/* Static very faint stars */}
+      {stars}
+
+      {/* Gentle Radial Glow behind the Earth (Center-Right) */}
+      <div className="absolute top-1/2 left-[60%] -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] max-w-[1200px] max-h-[1200px] pointer-events-none">
+        <div className="absolute inset-0 rounded-full blur-[100px] opacity-30" style={{
+          background: 'radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0.3) 40%, transparent 70%)'
         }} />
       </div>
 
@@ -16,10 +43,6 @@ export const Background: React.FC = () => {
         backgroundRepeat: 'repeat'
       }} />
       
-      {/* Very soft edge darkening */}
-      <div className="absolute inset-0" style={{
-        background: 'radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.4) 100%)'
-      }} />
     </div>
   );
 };

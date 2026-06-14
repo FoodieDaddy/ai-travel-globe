@@ -2,19 +2,19 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { TravelSceneState } from './TravelSceneState';
 
 export function useTravelSceneMachine() {
-  const [state, setState] = useState<TravelSceneState>(TravelSceneState.HERO_DEMO);
+  const [state, setState] = useState<TravelSceneState>(TravelSceneState.APP_READY);
   
   // Progress values for rendering (0 to 100)
   const [progress, setProgress] = useState(0);
   // Optional step counter for route elements
-  const [renderStep, setRenderStep] = useState(-1);
+  const [renderStep, setRenderStep] = useState(999); // Start fully rendered by default for the app
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetHeroDemo = useCallback(() => {
-    setState(TravelSceneState.HERO_DEMO);
+    setState(TravelSceneState.APP_READY);
     setProgress(0);
-    setRenderStep(0); // Starts the looping demo
+    setRenderStep(999); // Route fully shown
   }, []);
 
   const startGeneration = useCallback(() => {

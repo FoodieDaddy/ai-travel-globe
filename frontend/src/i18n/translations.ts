@@ -2,28 +2,39 @@ export type Language = 'zh' | 'en';
 
 export const translations = {
   zh: {
-    // Landing
-    landingTitle: '一句话，生成你的全球旅行路线',
-    landingSubtitle: '输入时间、预算与偏好，AI 会在 3D 地球上生成可视化行程。',
-    startPlanning: '开始规划',
-    viewDemo: '查看演示',
-    demoSummary: '亚洲灵感路线 · 14天 · 98% 匹配',
-    
-    // Header
-    appName: 'Travel OS',
-    appDesc: 'AI Travel Intelligence',
+    // App Base
+    appName: 'Memory Atlas',
+    appDesc: '我的旅行记忆星球',
     signIn: '登录',
     
-    // Planner Panel
-    promptLabel: '描述你的旅行愿景',
-    promptPlaceholder: '例如：我想从东京出发，14天，想去海岛、美食和城市夜景...',
-    travelMode: '旅行模式',
-    travelSignals: '旅行偏好信号',
-    generateOrbit: '生成旅行路线',
-    moreOptions: '高级选项',
-    hideOptions: '收起选项',
+    // Left Panel (Stats & Search)
+    memoryPanelTitle: '我的旅行足迹',
+    memoryPanelSubtitle: '点亮你去过的城市，记录每一段旅程。',
+    statCities: '已点亮城市',
+    statCountries: '已访问国家/地区',
+    statPhotos: '已上传照片',
+    recentMemories: '最近记录',
+    recentlyLit: '最近点亮',
+    searchPlaceholder: '搜索城市、景点或国家...',
+    addMemoryBtn: '添加旅行记录',
     
-    // HTML Floating Cards (Demo)
+    // Right Panel (Detail)
+    selectPlaceHint: '选择地球上的一个地点，查看景点和你的记录。',
+    whatsHere: '这里有什么：',
+    bestFor: '适合：',
+    statusLabel: '状态：',
+    statusNotVisited: '你还没有点亮这里',
+    statusVisited: '已点亮',
+    markVisitedBtn: '标记为去过',
+    uploadPhotoBtn: '上传照片',
+    uploadMoreBtn: '继续上传照片',
+    myTags: '我的标签：',
+    myNotes: '我的记录：',
+    myPhotos: '我的照片：',
+    editNoteBtn: '编辑记录',
+    litUpSuccess: '已点亮这个地方！',
+
+    // Mock places tags/descriptions (can be used as fallback)
     tokyoTags: '美食 / 夜景 / 科技',
     tokyoDesc: '霓虹都市与深夜食堂的第一站。',
     baliTags: '海岛 / 日落 / 放松',
@@ -32,70 +43,41 @@ export const translations = {
     singaporeDesc: '未来感城市与热带夜景交汇。',
     shanghaiTags: '外滩 / 都市 / 美食',
     shanghaiDesc: '在城市天际线中切换旅行节奏。',
-    
-    // Budgets
-    budgetLow: '经济',
-    budgetMedium: '平衡',
-    budgetHigh: '轻奢',
-    budgetLuxury: '奢华',
-
-    // Styles
-    styleCinematic: '电影感',
-    styleNature: '自然',
-    styleUrban: '城市',
-    styleHistorical: '历史',
-    styleFamily: '家庭',
-    styleHoneymoon: '蜜月',
-    stylePhotography: '摄影',
-    styleNiche: '小众',
-    
-    // AI Thinking
-    analyzing: '正在理解你的旅行偏好...',
-    matching: '正在匹配最佳城市...',
-    generating: '正在计算路线节奏...',
-    rendering: '正在生成 3D 轨道路线...',
-    routeReady: '路线已生成',
-    
-    // Route List
-    aiRouteCandidates: 'AI 推荐路线',
-    routeSubtitle: '基于您的偏好信号与季节匹配度生成。',
-    matchScore: '匹配度',
-    days: '天',
-    travelMood: '旅行氛围',
-    pace: '节奏',
-    seasonFit: '季节适宜度',
-    aiConfidence: 'AI 置信度',
-    viewDetails: '查看详情',
-    hideDetails: '收起详情',
-    
-    // Timeline
-    journeyTimeline: '行程时间线',
-    aiRecommendation: 'AI 推荐',
-    
   },
   en: {
-    // Landing
-    landingTitle: 'Let AI generate your next journey on Earth',
-    landingSubtitle: 'Input your time, budget, and preferences. AI will generate a visualized global route.',
-    startPlanning: 'Start Planning',
-    viewDemo: 'View Demo',
-    demoSummary: 'Asia Inspiration Route · 14 Days · 98% Match',
-    
-    // Header
-    appName: 'Travel OS',
-    appDesc: 'AI Travel Intelligence',
+    // App Base
+    appName: 'Memory Atlas',
+    appDesc: 'My Travel Memory Planet',
     signIn: 'Sign In',
     
-    // Planner Panel
-    promptLabel: 'Describe your travel vision',
-    promptPlaceholder: 'e.g., I want a 14-day trip starting from Tokyo, medium budget, focusing on islands, food, and niche cities...',
-    travelMode: 'Travel Mode',
-    travelSignals: 'Travel Signals',
-    generateOrbit: 'Generate Travel Route',
-    moreOptions: 'More Options',
-    hideOptions: 'Hide Options',
+    // Left Panel (Stats & Search)
+    memoryPanelTitle: 'My Travel Footprints',
+    memoryPanelSubtitle: 'Light up places you have visited, record every journey.',
+    statCities: 'Cities Lit Up',
+    statCountries: 'Countries Visited',
+    statPhotos: 'Photos Uploaded',
+    recentMemories: 'Recent Memories',
+    recentlyLit: 'Recently Lit Up',
+    searchPlaceholder: 'Search city, landmark or country...',
+    addMemoryBtn: 'Add Travel Memory',
     
-    // HTML Floating Cards (Demo)
+    // Right Panel (Detail)
+    selectPlaceHint: 'Select a place on the globe to view highlights and your memories.',
+    whatsHere: "What's here:",
+    bestFor: 'Best for:',
+    statusLabel: 'Status:',
+    statusNotVisited: "You haven't lit up this place yet.",
+    statusVisited: 'Lit Up',
+    markVisitedBtn: 'Mark as visited',
+    uploadPhotoBtn: 'Upload Photos',
+    uploadMoreBtn: 'Upload more photos',
+    myTags: 'My Tags:',
+    myNotes: 'My Notes:',
+    myPhotos: 'My Photos:',
+    editNoteBtn: 'Edit Note',
+    litUpSuccess: 'Place lit up!',
+
+    // Mock places tags/descriptions (can be used as fallback)
     tokyoTags: 'Food / Nightscape / Tech',
     tokyoDesc: 'First stop for neon lights and late-night diners.',
     baliTags: 'Island / Sunset / Relax',
@@ -104,44 +86,5 @@ export const translations = {
     singaporeDesc: 'A blend of futuristic city and tropical nights.',
     shanghaiTags: 'Bund / Urban / Food',
     shanghaiDesc: 'Switch travel rhythms amidst the city skyline.',
-    
-    // Budgets
-    budgetLow: 'Econ',
-    budgetMedium: 'Balanced',
-    budgetHigh: 'Premium',
-    budgetLuxury: 'Luxury',
-
-    // Styles
-    styleCinematic: 'Cinematic',
-    styleNature: 'Nature',
-    styleUrban: 'Urban',
-    styleHistorical: 'Historical',
-    styleFamily: 'Family',
-    styleHoneymoon: 'Honeymoon',
-    stylePhotography: 'Photography',
-    styleNiche: 'Niche',
-    
-    // AI Thinking
-    analyzing: 'Understanding your preferences...',
-    matching: 'Matching optimal cities...',
-    generating: 'Calculating route rhythm...',
-    rendering: 'Rendering 3D orbit path...',
-    routeReady: 'Route ready',
-    
-    // Route List
-    aiRouteCandidates: 'AI Route Candidates',
-    routeSubtitle: 'Generated from your travel signals and seasonal fit.',
-    matchScore: 'Match Score',
-    days: 'Days',
-    travelMood: 'Travel Mood',
-    pace: 'Pace',
-    seasonFit: 'Season Fit',
-    aiConfidence: 'AI Confidence',
-    viewDetails: 'View Details',
-    hideDetails: 'Hide Details',
-    
-    // Timeline
-    journeyTimeline: 'Journey Timeline',
-    aiRecommendation: 'AI Recommendation',
   }
 };

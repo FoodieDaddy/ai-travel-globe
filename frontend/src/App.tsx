@@ -1,194 +1,227 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Background } from './components/Layout/Background';
 import { Header } from './components/Layout/Header';
-import { PlannerPanel } from './components/AIPlanner/PlannerPanel';
-import { AIThinking } from './components/AIPlanner/AIThinking';
-import { RouteList } from './components/Route/RouteList';
 import { TravelGlobe } from './components/Globe/TravelGlobe';
-import { AIPlannerMockService } from './services/aiPlannerMock';
-import { TravelPreference, TravelRoute, City } from './types/travel';
-import { PRESET_ROUTES } from './data/routes';
-import { useLanguage } from './i18n/LanguageContext';
-import { useTravelSceneMachine } from './scene/useTravelSceneMachine';
-import { TravelSceneState } from './scene/TravelSceneState';
+import { MemoryStatsPanel } from './components/Memory/MemoryStatsPanel';
+import { PlaceDetailPanel } from './components/Memory/PlaceDetailPanel';
+import { GuideCommentaryPanel } from './components/Memory/GuideCommentaryPanel';
+import { Dock } from './components/Memory/Dock';
+import { INITIAL_PLACES } from './data/places';
+import { Place } from './types/travel';
+import { X, Play } from 'lucide-react';
 
-export const App: React.FC = () => {
-  const { t } = useLanguage();
-  const { sceneState, progress, renderStep, setRenderStep, startGeneration, resetHeroDemo } = useTravelSceneMachine();
-  
-  const [activeRoute, setActiveRoute] = useState<TravelRoute | null>(null);
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+function App() {
+  const [places, setPlaces] = useState<Place[]>(INITIAL_PLACES);
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(() => {
+    // 默认选中最近点亮/起点地点 “武陵源” 以防加载时右侧空白，完美吻合 demo 视频第一帧
+    return INITIAL_PLACES.find(p => p.id === 'p_wulingyuan') || null;
+  });
 
-  const plannerService = useMemo(() => new AIPlannerMockService((result) => {
-    if (result.status === 'success' && result.data) {
-      setActiveRoute(result.data);
-      setSelectedCity(null);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [immersiveActive, setImmersiveActive] = useState<boolean>(false);
+  const [isGuideVisible, setIsGuideVisible] = useState<boolean>(true);
+
+  // 1. 过滤逻辑：根据底部 Dock 筛选器条件过滤点位数据
+  const filteredPlaces = useMemo(() => {
+    return places.filter(place => {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'visited') return place.visited;
+      if (activeFilter === 'planned') return place.plannedDate && !place.visited;
+      // 类别筛选: heritage, nature, landmark, custom
+      return place.type === activeFilter;
+    });
+  }, [places, activeFilter]);
+
+  // 2. TTS 语音播报状态管理
+  const speakText = (text: string, onEnd: () => void) => {
+    if (!window.speechSynthesis) {
+      onEnd();
+      return;
     }
-  }), []);
+    // 取消当前任何正在播放的语音
+    window.speechSynthesis.cancel();
 
-  const handleGenerate = (pref: TravelPreference) => {
-    setSelectedCity(null);
-    setActiveRoute(null);
-    startGeneration();
-    plannerService.generatePlan(pref);
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.95; // 稍微放慢，让播报听起来更生动高级
+    
+    utterance.onend = () => {
+      onEnd();
+    };
+    utterance.onerror = (e) => {
+      console.error("Speech Synthesis Error:", e);
+      onEnd();
+    };
+    window.speechSynthesis.speak(utterance);
   };
 
-  const isDemo = sceneState === TravelSceneState.HERO_DEMO;
-  const currentRoute = isDemo ? PRESET_ROUTES[0] : activeRoute;
-
-  // Handle Progressive Rendering of Route
-  useEffect(() => {
-    if (renderStep >= 0 && currentRoute) {
-      const maxSteps = currentRoute.places.length + currentRoute.arcs.length;
-      
-      if (renderStep < maxSteps) {
-        const timer = setTimeout(() => {
-          setRenderStep(prev => prev + 1);
-        }, 1200); // 1.2s per segment
-        return () => clearTimeout(timer);
-      } else {
-        if (isDemo) {
-          // Loop the demo after holding for 5 seconds
-          const holdTimer = setTimeout(() => {
-            resetHeroDemo();
-          }, 5000);
-          return () => clearTimeout(holdTimer);
-        } else {
-          // If result animation finishes, keep it fully rendered
-          setRenderStep(-1);
-        }
-      }
+  // 小车驶达站点时触发
+  const handleReachPlace = (place: Place, onSpeechEnd: () => void) => {
+    // 聚焦小车所在的当前景点
+    setSelectedPlace(place);
+    
+    // 如果有传说故事，调用 TTS 语音解说
+    if (place.legendStory) {
+      speakText(place.legendStory, onSpeechEnd);
+    } else {
+      setTimeout(onSpeechEnd, 1500);
     }
-  }, [renderStep, currentRoute, isDemo, resetHeroDemo, setRenderStep]);
+  };
 
-  // Compute displayed points and arcs based on renderStep
-  let activePoints = currentRoute?.places || [];
-  let activeArcs = currentRoute?.arcs || [];
+  // 退出沉浸式体验
+  const handleExitImmersive = () => {
+    setImmersiveActive(false);
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel(); // 停止发声
+    }
+    // 返回默认聚焦
+    setSelectedPlace(places.find(p => p.id === 'p_wulingyuan') || null);
+  };
 
-  if (renderStep >= 0 && currentRoute) {
-    const pCount = Math.floor(renderStep / 2) + 1;
-    const aCount = Math.floor((renderStep - 1) / 2) + 1;
-    activePoints = currentRoute.places.slice(0, Math.max(0, pCount));
+  // 地图点位点击回调
+  const handlePlaceClick = (place: Place) => {
+    setSelectedPlace(place);
+  };
+
+  // 景点详情打卡回调
+  const handleMarkVisited = (placeId: string) => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
-    // For progressive presentation, inject `demoStep` into cities
-    activePoints = activePoints.map((p, idx) => ({ ...p, demoStep: idx * 2 }));
+    setPlaces(prev => prev.map(p => {
+      if (p.id === placeId) {
+        return {
+          ...p,
+          visited: true,
+          visitedAt: dateStr,
+          plannedDate: undefined // 打卡后移除规划状态
+        };
+      }
+      return p;
+    }));
     
-    activeArcs = currentRoute.arcs.slice(0, Math.max(0, aCount));
-  }
+    setSelectedPlace(prev => {
+      if (prev && prev.id === placeId) {
+        return {
+          ...prev,
+          visited: true,
+          visitedAt: dateStr,
+          plannedDate: undefined
+        };
+      }
+      return prev;
+    });
+  };
 
-  // Determine visibility of different UI elements based on state
-  const isLandingVisible = sceneState === TravelSceneState.IDLE || sceneState === TravelSceneState.HERO_DEMO;
-  const isAnalyzing = sceneState === TravelSceneState.ANALYZING || sceneState === TravelSceneState.SELECTING_CITIES;
-  const isGeneratingVisible = sceneState !== TravelSceneState.IDLE && sceneState !== TravelSceneState.HERO_DEMO && sceneState !== TravelSceneState.COMPLETE;
-  const showDemoSummary = isDemo && currentRoute && renderStep >= (currentRoute.places.length + currentRoute.arcs.length - 1);
-  const showResultRoute = sceneState === TravelSceneState.COMPLETE && activeRoute;
+  // 景点详情加入规划回调
+  const handleTogglePlanned = (placeId: string) => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  // Derive message for AI Thinking
-  let aiMessage = '';
-  if (sceneState === TravelSceneState.ANALYZING) aiMessage = t('analyzing');
-  if (sceneState === TravelSceneState.SELECTING_CITIES) aiMessage = t('matching');
-  if (sceneState === TravelSceneState.BUILDING_ROUTE) aiMessage = t('generating');
-  if (sceneState === TravelSceneState.RENDERING_PATH) aiMessage = t('rendering');
-  if (sceneState === TravelSceneState.COMPLETE) aiMessage = t('routeReady');
+    setPlaces(prev => prev.map(p => {
+      if (p.id === placeId) {
+        const isPlanned = !!p.plannedDate;
+        return {
+          ...p,
+          plannedDate: isPlanned ? undefined : dateStr
+        };
+      }
+      return p;
+    }));
+
+    setSelectedPlace(prev => {
+      if (prev && prev.id === placeId) {
+        const isPlanned = !!prev.plannedDate;
+        return {
+          ...prev,
+          plannedDate: isPlanned ? undefined : dateStr
+        };
+      }
+      return prev;
+    });
+  };
+
+  // 全局视角重置
+  const handleResetView = () => {
+    setSelectedPlace(null);
+  };
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-black relative flex font-sans text-slate-200">
+    <div className="w-full h-screen bg-[#02040a] text-white overflow-hidden relative font-sans selection:bg-amber-500/30">
+      {/* 极简星空毛玻璃背景 */}
       <Background />
-      {/* We can map state to a simplified appPhase for Header, or update Header to not care */}
-      <Header appPhase={isLandingVisible ? 'landing' : (showResultRoute ? 'result' : 'generating')} />
+      
+      {/* 顶部 Branding 标题 */}
+      <Header appPhase={immersiveActive ? 'landing' : 'planning'} />
 
-      {/* 3D Globe Layer */}
-      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-visible">
-        <div className="w-[120%] h-[120%] transform scale-[0.85] translate-x-[22%] pointer-events-auto">
-          <TravelGlobe 
-            places={activePoints}
-            arcs={activeArcs}
-            selectedPlace={selectedCity}
-            onPlaceClick={(city) => {
-              if (showResultRoute) setSelectedCity(city);
-            }}
-            isAnimating={renderStep >= 0}
-            sceneState={sceneState}
-            currentRenderStep={renderStep}
+      {/* 3D 互动地球主画布 */}
+      <div className="absolute inset-0 z-0">
+        <TravelGlobe 
+          places={filteredPlaces}
+          selectedPlace={selectedPlace}
+          onPlaceClick={handlePlaceClick}
+          immersiveActive={immersiveActive}
+          onReachPlace={handleReachPlace}
+        />
+      </div>
+
+      {/* 顶部沉浸模式状态条 */}
+      {immersiveActive && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center pointer-events-auto">
+          <button 
+            onClick={handleExitImmersive}
+            className="px-6 py-2.5 rounded-full backdrop-blur-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 hover:border-rose-500/60 shadow-[0_4px_20px_rgba(244,63,94,0.3)] transition-all font-bold text-xs text-rose-200 tracking-widest flex items-center gap-1.5 cursor-pointer animate-pulse"
+          >
+            <X className="w-4 h-4" />
+            退出视角
+          </button>
+        </div>
+      )}
+
+      {/* 常规 UI 面板图层 */}
+      {!immersiveActive && (
+        <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-8">
+          {/* 中间核心交互层 */}
+          <div className="flex-1 flex justify-between items-center w-full mt-16 mb-20">
+            {/* 左下角导游解说卡片 */}
+            <div className="self-end justify-self-start">
+              <GuideCommentaryPanel 
+                onStartCommentary={() => setImmersiveActive(true)}
+                onClose={() => setIsGuideVisible(false)}
+                visible={isGuideVisible}
+              />
+            </div>
+
+            {/* 右侧交互侧边栏（Timeline 与 Detail 双模态切换） */}
+            <div className="self-stretch flex items-center ml-auto">
+              {selectedPlace ? (
+                <PlaceDetailPanel 
+                  place={selectedPlace}
+                  onMarkVisited={handleMarkVisited}
+                  onTogglePlanned={handleTogglePlanned}
+                  onClose={() => setSelectedPlace(null)}
+                  onCenterPlace={(p) => setSelectedPlace(p)}
+                />
+              ) : (
+                <MemoryStatsPanel 
+                  places={places}
+                  onPlaceSelect={handlePlaceClick}
+                  onStartImmersive={() => setImmersiveActive(true)}
+                  onResetView={handleResetView}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* 底部 Dock 分类筛选器 */}
+          <Dock 
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
           />
         </div>
-      </div>
-
-      {/* UI Overlay Layer */}
-      <div className="absolute inset-0 z-10 pointer-events-none flex justify-between p-8 pt-24 pb-10">
-        
-        {/* Central Landing Elements (Hero Search Bar) */}
-        <AnimatePresence>
-          {(isLandingVisible || isAnalyzing) && (
-            <motion.div 
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0, filter: 'blur(0px)', scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="absolute left-[10%] top-1/2 -translate-y-1/2 pointer-events-auto max-w-2xl z-20"
-            >
-              <h1 className="text-6xl font-medium text-white tracking-wide mb-6 leading-tight drop-shadow-2xl">
-                {t('landingTitle')}
-              </h1>
-              <p className="text-lg text-slate-300 font-light mb-12 leading-relaxed drop-shadow-md">
-                {t('landingSubtitle')}
-              </p>
-              
-              <PlannerPanel 
-                onGenerate={handleGenerate} 
-                disabled={isGeneratingVisible} 
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Floating Demo Summary (Right) */}
-        <AnimatePresence>
-          {showDemoSummary && (
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2 }}
-              className="absolute right-[5%] bottom-[10%] pointer-events-none z-20"
-            >
-              <div className="bg-black/20 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                <span className="text-sm text-slate-200 font-medium tracking-wide">
-                  {t('demoSummary')}
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Right Side: Route List */}
-        <AnimatePresence>
-          {showResultRoute && (
-            <motion.div 
-              initial={{ x: 100, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 50, opacity: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.5 }}
-              className="h-full flex flex-col justify-start ml-auto pointer-events-auto mt-4"
-            >
-              <RouteList 
-                activePlan={activeRoute!}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Central Overlay: AI Thinking Animation */}
-      <AIThinking 
-        isVisible={isGeneratingVisible || (sceneState === TravelSceneState.COMPLETE && progress < 100)} 
-        message={aiMessage} 
-        progress={progress}
-      />
+      )}
     </div>
   );
-};
+}
 
 export default App;
