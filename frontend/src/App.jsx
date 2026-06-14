@@ -35,7 +35,12 @@ function App() {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-black relative flex">
+    <div className="w-screen h-screen overflow-hidden bg-black relative flex font-sans">
+      {/* Global Vignette Overlay for depth */}
+      <div className="absolute inset-0 z-10 pointer-events-none" style={{
+        background: 'radial-gradient(circle at center, transparent 30%, rgba(3, 7, 18, 0.8) 100%)'
+      }} />
+
       {/* 3D Globe Background */}
       <div className="absolute inset-0 z-0">
         <GlobeView 
@@ -66,10 +71,10 @@ function App() {
             {plan && (
               <button 
                 onClick={() => { setPlan(null); setError(null); }}
-                className="bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur px-6 py-3 rounded-xl border border-white/10 transition-all shadow-2xl cursor-pointer font-medium flex items-center gap-2"
+                className="glass-panel hover:scale-105 text-white px-6 py-3 rounded-xl transition-all duration-300 cursor-pointer font-medium flex items-center gap-3 group"
               >
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                重新规划路线
+                <span className="w-2 h-2 rounded-full bg-blue-400 group-hover:shadow-[0_0_10px_#60a5fa] animate-pulse" />
+                <span className="tracking-wide">重新规划路线</span>
               </button>
             )}
           </div>

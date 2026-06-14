@@ -4,19 +4,19 @@ export function ItineraryPanel({ plan, selectedPlaceId, onPlaceSelect }) {
   if (!plan) return null;
 
   return (
-    <div className="bg-[#0B1120]/85 backdrop-blur-2xl flex flex-col h-full w-[380px] shadow-[-20px_0_40px_rgba(0,0,0,0.5)] overflow-hidden relative border-l border-blue-500/10">
+    <div className="glass-panel flex flex-col h-full w-[400px] border-l-0 border-r-0 relative z-20">
       {/* Header */}
-      <div className="p-6 border-b border-white/10 flex-shrink-0 bg-gradient-to-b from-blue-900/40 to-transparent relative z-10">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
-          <Navigation className="w-5 h-5 text-blue-400" />
-          我的旅行轨迹
+      <div className="p-8 border-b border-white/5 flex-shrink-0 relative z-10">
+        <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 flex items-center gap-3 mb-3">
+          <Navigation className="w-6 h-6 text-blue-400" />
+          <span className="tracking-wide">我的旅行轨迹</span>
         </h2>
-        <div className="flex gap-2 text-xs mb-3">
-          <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-md border border-blue-500/30">
+        <div className="flex gap-2 text-xs mb-4 font-mono-tech">
+          <span className="px-3 py-1.5 bg-blue-500/10 text-blue-300 rounded border border-blue-500/20 tech-border">
             {plan.destination}
           </span>
-          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-md border border-purple-500/30">
-            {plan.days} 天
+          <span className="px-3 py-1.5 bg-purple-500/10 text-purple-300 rounded border border-purple-500/20 tech-border">
+            {plan.days} DAYS
           </span>
         </div>
         <p className="text-sm text-slate-300 line-clamp-2">{plan.summary}</p>
@@ -48,42 +48,43 @@ export function ItineraryPanel({ plan, selectedPlaceId, onPlaceSelect }) {
                   </div>
                   
                   {/* Card */}
-                  <div className={`p-4 rounded-xl transition-all border ${
+                  <div className={`p-5 rounded-2xl transition-all duration-300 border ${
                     isSelected 
-                      ? 'bg-blue-900/20 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]' 
-                      : 'bg-slate-800/30 border-white/5 hover:bg-slate-800/50 hover:border-white/10'
+                      ? 'glass-card border-blue-500/40 scale-[1.02]' 
+                      : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05]'
                   }`}>
                     {/* Header */}
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className={`font-medium ${isSelected ? 'text-blue-300' : 'text-white'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className={`text-lg font-semibold tracking-wide ${isSelected ? 'text-blue-300 text-glow' : 'text-slate-200'}`}>
                         {place.name}
                       </h4>
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {place.days}天
+                      <span className="text-[10px] uppercase tracking-widest text-slate-400 flex items-center gap-1.5 font-mono-tech bg-black/30 px-2 py-1 rounded">
+                        <Calendar className="w-3 h-3 text-blue-400" />
+                        {place.days} DAY{place.days > 1 ? 'S' : ''}
                       </span>
                     </div>
 
                     {/* Image */}
                     {place.image && (
-                      <div className="w-full h-24 rounded-lg overflow-hidden mb-3 border border-white/10">
+                      <div className="w-full h-28 rounded-xl overflow-hidden mb-4 relative">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
                         <img 
                           src={place.image} 
                           alt={place.name} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
                       </div>
                     )}
                     
                     {/* Description */}
-                    <p className="text-xs text-slate-400 mb-3 line-clamp-2">
+                    <p className="text-sm text-slate-400/90 mb-4 leading-relaxed font-light">
                       {place.description}
                     </p>
                     
                     {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {place.tags?.map(tag => (
-                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-300 border border-slate-600">
+                        <span key={tag} className="text-[10px] px-2.5 py-1 rounded border border-white/10 bg-white/5 text-slate-300 uppercase tracking-wider font-mono-tech">
                           {tag}
                         </span>
                       ))}

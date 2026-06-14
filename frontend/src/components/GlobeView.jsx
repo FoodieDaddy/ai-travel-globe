@@ -49,15 +49,22 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
       .arcDashAnimateTime(2000)
       .htmlElement(d => {
         const el = document.createElement('div');
-        el.className = 'w-56 bg-[#0B1120]/80 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all hover:scale-105 pointer-events-auto cursor-pointer';
+        el.className = 'w-64 glass-card rounded-2xl overflow-hidden transition-all hover:scale-105 pointer-events-auto cursor-pointer group relative';
         el.innerHTML = `
-          ${d.image ? `<img src="${d.image}" class="w-full h-28 object-cover" alt="${d.name}" />` : ''}
-          <div class="p-4 relative">
-            <div class="absolute -top-6 right-3 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center border-4 border-[#0B1120] shadow-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <!-- Tech corner accent -->
+          <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-blue-400 rounded-tl-2xl z-20 opacity-50"></div>
+          
+          ${d.image ? `<div class="relative h-32 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent z-10"></div>
+            <img src="${d.image}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="${d.name}" />
+          </div>` : ''}
+          <div class="p-5 relative z-20 -mt-8">
+            <div class="absolute top-0 right-4 w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center border-4 border-[#0f172a] shadow-[0_0_15px_rgba(59,130,246,0.6)] transform -translate-y-1/2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
             </div>
-            <h3 class="text-white font-bold text-base mb-1">${d.name}</h3>
-            <p class="text-slate-300 text-xs line-clamp-2">${d.description}</p>
+            <h3 class="text-white font-bold text-lg mb-1 tracking-wide">${d.name}</h3>
+            <p class="text-blue-300/80 text-[10px] font-mono-tech mb-2 tracking-widest uppercase border-b border-white/10 pb-2">COORD: ${d.lat.toFixed(2)}, ${d.lng.toFixed(2)}</p>
+            <p class="text-slate-300/90 text-sm line-clamp-2 leading-relaxed font-light">${d.description}</p>
           </div>
         `;
         el.onclick = () => onPlaceClick(d);
