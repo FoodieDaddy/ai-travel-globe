@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TravelRoute } from '../../types/travel';
-import { TerminalSquare } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 interface Props {
   route: TravelRoute;
@@ -15,52 +15,45 @@ export const ItineraryTimeline: React.FC<Props> = ({ route }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="p-5"
+      className="p-6 pt-4"
     >
-      <div className="flex items-center gap-2 mb-6 border-b border-indigo-500/20 pb-2">
-        <TerminalSquare className="w-4 h-4 text-indigo-400" />
-        <h3 className="text-xs font-bold text-indigo-300 tracking-[0.15em] uppercase">
-          Mission Nodes
+      <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-3">
+        <MapPin className="w-4 h-4 text-sky-400" />
+        <h3 className="text-sm font-medium text-white tracking-wide">
+          Journey Timeline
         </h3>
-        <span className="ml-auto text-[9px] font-mono-tech text-slate-500 tracking-wider">
-          DURATION: {route.days}D
-        </span>
       </div>
       
-      <div className="space-y-6 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-indigo-500/20">
+      <div className="space-y-8 relative before:absolute before:inset-0 before:ml-[3px] before:-translate-x-px before:h-full before:w-[1px] before:bg-white/10">
         {route.places.map((place, idx) => {
           const startDay = route.places.slice(0, idx).reduce((acc, p) => acc + p.days, 1);
           const endDay = startDay + place.days - 1;
 
           return (
-            <div key={place.id} className="relative flex items-start gap-5 group">
-              {/* Node Indicator */}
-              <div className="absolute left-0 w-6 h-6 rounded-full bg-[#02040A] border-2 border-indigo-500/50 flex items-center justify-center z-10 group-hover:border-indigo-400 group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
-              </div>
+            <div key={place.id} className="relative flex items-start gap-6 group">
+              {/* Elegant Node Indicator */}
+              <div className="absolute left-0 mt-1.5 w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(14,165,233,0.8)] z-10 transition-transform duration-300 group-hover:scale-150" />
               
-              <div className="ml-8 w-full">
-                <div className="flex items-baseline justify-between mb-2">
-                  <h4 className="text-indigo-200 font-mono-tech font-bold text-sm tracking-wider">
-                    [ NODE: {place.name.toUpperCase()} ]
+              <div className="ml-6 w-full">
+                <div className="flex items-baseline mb-2 gap-3">
+                  <h4 className="text-white font-medium text-base tracking-wide">
+                    {place.name}
                   </h4>
-                  <span className="text-[10px] font-mono-tech text-indigo-400/80 bg-indigo-500/10 px-1.5 py-0.5 border border-indigo-500/20">
-                    DAY {startDay}{startDay !== endDay ? `-${endDay}` : ''}
+                  <div className="flex-1 border-b border-dashed border-white/10 translate-y-[-4px]" />
+                  <span className="text-xs font-medium text-sky-400">
+                    Days {startDay}{startDay !== endDay ? `-${endDay}` : ''}
                   </span>
                 </div>
                 
-                <div className="bg-black/40 border border-white/5 p-3 rounded-sm relative">
-                  <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-indigo-500/30 group-hover:bg-indigo-400 transition-colors" />
-                  <p className="text-[11px] text-slate-400 leading-relaxed font-light mb-2">
-                    {place.description}
-                  </p>
-                  <div className="flex gap-1.5">
-                    {place.tags?.map(tag => (
-                      <span key={tag} className="text-[9px] text-slate-500 font-mono-tech uppercase tracking-wider before:content-['#']">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                <p className="text-sm text-slate-400 leading-relaxed font-light mb-3">
+                  {place.description}
+                </p>
+                <div className="flex gap-2">
+                  {place.tags?.map(tag => (
+                    <span key={tag} className="text-[10px] text-slate-500 font-medium px-2 py-1 bg-white/5 rounded-md border border-white/5">
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>

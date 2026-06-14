@@ -87,16 +87,18 @@ export const App: React.FC = () => {
       <Header />
 
       {/* 3D Globe Layer */}
-      <div className="absolute inset-0 z-0">
-        <TravelGlobe 
-          places={activePoints}
-          arcs={activeArcs}
-          selectedPlace={selectedCity}
-          hoveredRoutePlaces={hoveredPoints}
-          hoveredRouteArcs={hoveredArcs}
-          onPlaceClick={(city) => setSelectedCity(city)}
-          isAnimating={renderStep >= 0}
-        />
+      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+        <div className="w-full h-full transform scale-[1.15] pointer-events-auto">
+          <TravelGlobe 
+            places={activePoints}
+            arcs={activeArcs}
+            selectedPlace={selectedCity}
+            hoveredRoutePlaces={hoveredPoints}
+            hoveredRouteArcs={hoveredArcs}
+            onPlaceClick={(city) => setSelectedCity(city)}
+            isAnimating={renderStep >= 0}
+          />
+        </div>
       </div>
 
       {/* UI Overlay Layer */}

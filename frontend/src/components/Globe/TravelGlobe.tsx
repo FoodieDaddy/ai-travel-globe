@@ -28,7 +28,7 @@ export const TravelGlobe: React.FC<Props> = ({
 
   // Background dots for cyber look
   const bgDots = useMemo(() => {
-    return Array.from({ length: 400 }).map(() => ({
+    return Array.from({ length: 300 }).map(() => ({
       lat: (Math.random() - 0.5) * 180,
       lng: (Math.random() - 0.5) * 360,
       size: Math.random() * 0.1 + 0.05,
@@ -55,23 +55,28 @@ export const TravelGlobe: React.FC<Props> = ({
     const globe = Globe()(containerRef.current)
       .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
       .showAtmosphere(true)
-      .atmosphereColor('#6366f1') // Intense purple/blue
-      .atmosphereAltitude(0.25)
+      .atmosphereColor('#0ea5e9') // Sky blue, lighter edge
+      .atmosphereAltitude(0.2)
       .pointsData(allPoints)
       .pointLat('lat')
       .pointLng('lng')
-      .pointRadius((d: any) => d.isBg ? d.size : (d.isStart || d.isEnd ? 1.5 : 1.0))
+      .pointRadius((d: any) => d.isBg ? d.size : 1.2)
       .pointAltitude((d: any) => d.isBg ? 0.01 : 0.03)
       .pointColor((d: any) => {
         if (d.isBg) return '#1e3a8a';
-        if (d.isStart) return '#10b981'; // Emerald start
-        if (d.isEnd) return '#f43f5e';   // Rose end
-        return '#38bdf8';                // Blue intermediate
+        if (d.isStart) return '#06b6d4'; // Cyan
+        if (d.isEnd) return '#f59e0b';   // Amber/Gold
+        return '#38bdf8';                // Light Blue
       })
-      .pointLabel((d: any) => {
-        if (d.isBg) return '';
-        return `<div class="px-2 py-1 bg-black/80 backdrop-blur-md rounded border border-white/10 text-[10px] font-mono-tech text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.3)]">[ NODE: ${d.name.toUpperCase()} ]</div>`;
-      })
+      .labelsData(displayPlaces) // Floating labels for all active route cities
+      .labelLat('lat')
+      .labelLng('lng')
+      .labelText('name')
+      .labelSize(1.5)
+      .labelDotRadius(0.5)
+      .labelColor(() => 'rgba(255, 255, 255, 0.8)')
+      .labelResolution(3)
+      .labelAltitude(0.06) // Suspend slightly above point
       .onPointClick((d: any) => {
         if (!d.isBg && onPlaceClick) onPlaceClick(d as City);
       })
@@ -80,35 +85,37 @@ export const TravelGlobe: React.FC<Props> = ({
       .arcStartLng('startLng')
       .arcEndLat('endLat')
       .arcEndLng('endLng')
-      .arcColor(() => ['#818cf8', '#c084fc']) // Blue to Purple
-      .arcAltitudeAutoScale(0.6) // Higher orbital arcs
-      .arcStroke(1.2)
-      .arcDashLength(0.4)
-      .arcDashGap(2)
+      .arcColor(() => ['#0ea5e9', '#6366f1']) // Cyan to Indigo
+      .arcAltitudeAutoScale(0.5)
+      .arcStroke(1.5) // Slightly thicker
+      .arcDashLength(0.6)
+      .arcDashGap(1.5)
       .arcDashInitialGap(() => Math.random() * 2)
-      .arcDashAnimateTime(2000)
+      .arcDashAnimateTime(2500)
       .htmlElement((d: any) => {
         const el = document.createElement('div');
-        el.className = 'w-72 glass-panel rounded-xl overflow-hidden transition-all duration-500 ease-out pointer-events-auto cursor-pointer group relative scale-in-center border border-indigo-500/30 bg-[#050505]/80 backdrop-blur-xl shadow-[0_0_30px_rgba(99,102,241,0.2)]';
+        el.className = 'w-72 glass-panel rounded-2xl overflow-hidden transition-all duration-500 ease-out pointer-events-auto cursor-pointer group relative scale-in-center bg-[#020612]/60 backdrop-blur-2xl border border-white/10 shadow-2xl';
         el.innerHTML = `
-          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-transparent opacity-50"></div>
-          ${d.image ? `<div class="relative h-32 overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent z-10"></div>
-            <img src="${d.image}" class="w-full h-full object-cover opacity-60 mix-blend-screen transition-transform duration-700 group-hover:scale-110" alt="${d.name}" />
-            <div class="absolute top-3 right-3 z-20 px-2 py-1 bg-indigo-500/20 backdrop-blur-md rounded text-[9px] font-mono-tech text-indigo-200 border border-indigo-500/30">
-              SYS_LOC // ${d.country.toUpperCase()}
+          <div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+          ${d.image ? `<div class="relative h-36 overflow-hidden p-2 pb-0">
+            <div class="w-full h-full rounded-xl overflow-hidden relative">
+              <div class="absolute inset-0 bg-gradient-to-t from-[#020612] to-transparent z-10"></div>
+              <img src="${d.image}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${d.name}" />
+              <div class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[10px] font-medium text-white/80 border border-white/10">
+                ${d.country}
+              </div>
             </div>
           </div>` : ''}
-          <div class="p-5 relative z-20 -mt-4">
-            <h3 class="text-white font-bold text-xl mb-1 tracking-wider uppercase">${d.name}</h3>
+          <div class="p-5 relative z-20">
+            <h3 class="text-white font-medium text-xl mb-2 tracking-wide">${d.name}</h3>
             
-            <div class="flex flex-wrap gap-1 mb-4 border-b border-white/5 pb-3">
-              ${d.tags ? d.tags.map((t: string) => `<span class="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] text-slate-400 font-mono-tech">[${t.toUpperCase()}]</span>`).join('') : ''}
-              <span class="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[9px] text-indigo-300 font-mono-tech">DUR: ${d.days}D</span>
+            <div class="flex flex-wrap gap-1.5 mb-4">
+              ${d.tags ? d.tags.map((t: string) => `<span class="px-2 py-0.5 rounded-full bg-white/10 border border-white/5 text-[10px] text-slate-300 font-medium">${t}</span>`).join('') : ''}
+              <span class="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/20 text-[10px] text-sky-300 font-medium">${d.days} Days</span>
             </div>
 
-            <p class="text-slate-400 text-xs line-clamp-3 leading-relaxed font-light mb-1">
-              <span class="text-indigo-400 font-medium text-[10px] font-mono-tech tracking-wider block mb-1">> AI_ANALYSIS_</span>
+            <p class="text-slate-400 text-xs leading-relaxed font-light">
+              <span class="text-sky-400 font-medium text-[10px] uppercase block mb-1">AI Recommendation</span>
               ${d.description}
             </p>
           </div>
@@ -121,32 +128,50 @@ export const TravelGlobe: React.FC<Props> = ({
       });
 
     const globeMaterial = globe.globeMaterial();
-    globeMaterial.color = new THREE.Color(0x0a0f1c);
+    globeMaterial.color = new THREE.Color(0x060b19); // Very deep navy
     globeMaterial.emissive = new THREE.Color(0x02040a);
     globeMaterial.emissiveIntensity = 0.5;
-    globeMaterial.shininess = 0.8;
+    globeMaterial.shininess = 0.9; // More reflective
 
-    // Holographic Mesh & Scanner
+    // Holographic Meshes & Scanners
     const R = globe.getGlobeRadius();
     
-    // 1. Wireframe Sphere
+    // 1. Subtle Holographic Grid
     const wireframe = new THREE.Mesh(
       new THREE.SphereGeometry(R * 1.002, 36, 18),
-      new THREE.MeshBasicMaterial({ color: 0x4338ca, wireframe: true, transparent: true, opacity: 0.15 })
+      new THREE.MeshBasicMaterial({ color: 0x0ea5e9, wireframe: true, transparent: true, opacity: 0.05 })
     );
 
-    // 2. Equatorial Scanner Ring
-    const scannerRing = new THREE.Mesh(
-      new THREE.TorusGeometry(R * 1.05, 0.5, 16, 100),
-      new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.4 })
+    // 2. Multi-axis faint orbital rings
+    const ring1 = new THREE.Mesh(
+      new THREE.TorusGeometry(R * 1.15, 0.2, 16, 100),
+      new THREE.MeshBasicMaterial({ color: 0x6366f1, transparent: true, opacity: 0.15 })
     );
-    scannerRing.rotation.x = Math.PI / 2;
+    ring1.rotation.x = Math.PI / 2;
+
+    const ring2 = new THREE.Mesh(
+      new THREE.TorusGeometry(R * 1.25, 0.1, 16, 100),
+      new THREE.MeshBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.1 })
+    );
+    ring2.rotation.y = Math.PI / 4;
+    ring2.rotation.x = Math.PI / 8;
+
+    const ring3 = new THREE.Mesh(
+      new THREE.TorusGeometry(R * 1.35, 0.05, 16, 100),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.1 })
+    );
+    ring3.rotation.y = -Math.PI / 4;
+    ring3.rotation.x = -Math.PI / 8;
 
     globe.scene().add(wireframe);
-    globe.scene().add(scannerRing);
+    globe.scene().add(ring1);
+    globe.scene().add(ring2);
+    globe.scene().add(ring3);
 
     (function rotateHolo() {
-      scannerRing.rotation.z += 0.005;
+      ring1.rotation.z += 0.002;
+      ring2.rotation.z -= 0.001;
+      ring3.rotation.z += 0.0015;
       requestAnimationFrame(rotateHolo);
     })();
 
@@ -176,7 +201,8 @@ export const TravelGlobe: React.FC<Props> = ({
     if (!globeRef.current) return;
     globeRef.current.pointsData(allPoints);
     globeRef.current.arcsData(displayArcs);
-  }, [allPoints, displayArcs]);
+    globeRef.current.labelsData(displayPlaces);
+  }, [allPoints, displayArcs, displayPlaces]);
 
   useEffect(() => {
     if (!globeRef.current) return;
@@ -184,26 +210,26 @@ export const TravelGlobe: React.FC<Props> = ({
     // HTML Card for selected place
     globeRef.current.htmlElementsData(selectedPlace ? [selectedPlace] : []);
     
-    // Pulse rings for ALL places in the current active/hovered route
+    // Pulse rings for ALL places
     const ringData = selectedPlace ? [selectedPlace] : displayPlaces;
 
     globeRef.current.ringsData(ringData)
       .ringLat('lat')
       .ringLng('lng')
       .ringColor((d: any) => (t: number) => {
-        if (d === selectedPlace) return `rgba(167, 139, 250, ${1-Math.sqrt(t)})`; 
-        return `rgba(56, 189, 248, ${0.5 - Math.sqrt(t)*0.5})`; 
+        if (d === selectedPlace) return `rgba(14, 165, 233, ${1-Math.sqrt(t)})`; // Bright cyan for selected
+        return `rgba(56, 189, 248, ${0.4 - Math.sqrt(t)*0.4})`; // Light cyan
       })
-      .ringMaxRadius((d: any) => d === selectedPlace ? 15 : 8)
+      .ringMaxRadius((d: any) => d === selectedPlace ? 12 : 6)
       .ringPropagationSpeed(3)
-      .ringRepeatPeriod((d: any) => d === selectedPlace ? 600 : 1000);
+      .ringRepeatPeriod((d: any) => d === selectedPlace ? 800 : 1200);
 
-    // Camera movement tracking latest point during animation
+    // Camera movement
     if (isAnimating && displayPlaces.length > 0) {
       const latestPlace = displayPlaces[displayPlaces.length - 1];
       globeRef.current.pointOfView(
         { lat: latestPlace.lat, lng: latestPlace.lng, altitude: 2.0 },
-        800 // fast pan
+        800 
       );
     } else if (selectedPlace) {
       setTimeout(() => {
@@ -214,7 +240,6 @@ export const TravelGlobe: React.FC<Props> = ({
         );
       }, 50);
     } else if (displayPlaces.length > 0 && !isAnimating) {
-      // Show full route overview
       setTimeout(() => {
         if (!globeRef.current) return;
         globeRef.current.pointOfView(

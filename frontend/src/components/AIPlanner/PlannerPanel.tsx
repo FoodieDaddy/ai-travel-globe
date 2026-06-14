@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ScanText, Terminal, MapPin } from 'lucide-react';
+import { Sparkles, Compass } from 'lucide-react';
 import { TravelPreference } from '../../types/travel';
 
 interface Props {
@@ -39,61 +39,62 @@ export const PlannerPanel: React.FC<Props> = ({ onGenerate, disabled }) => {
       initial={{ x: -50, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="w-[420px] pointer-events-auto flex flex-col font-mono-tech border-l border-r border-indigo-500/20 bg-[#02040A]/80 backdrop-blur-md relative"
+      className="w-[440px] pointer-events-auto flex flex-col font-sans bg-[#020612]/30 backdrop-blur-[40px] rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative"
     >
-      {/* Decorative corners */}
-      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-indigo-400" />
-      <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-indigo-400" />
-      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-indigo-400" />
-      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-indigo-400" />
+      {/* Subtle Noise Overlay inside the panel */}
+      <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+      }} />
 
       {/* Header */}
-      <div className="border-b border-indigo-500/20 p-4 flex items-center gap-3 bg-indigo-500/5">
-        <Terminal className="w-5 h-5 text-indigo-400" />
-        <div>
-          <h2 className="text-sm font-bold text-indigo-200 tracking-[0.2em] uppercase">Sys.Console</h2>
-          <p className="text-[9px] text-slate-500 tracking-wider">AWAITING_INPUT_COMMAND</p>
+      <div className="px-8 pt-8 pb-4 relative z-10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 p-[1px]">
+            <div className="w-full h-full bg-[#020612] rounded-full flex items-center justify-center">
+              <Compass className="w-5 h-5 text-sky-400" />
+            </div>
+          </div>
+          <h2 className="text-xl font-medium text-white tracking-wide">Travel OS</h2>
         </div>
+        <p className="text-sm text-slate-400 font-light">Craft your next journey with artificial intelligence.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 text-sm text-slate-300 flex-1 overflow-y-auto custom-scrollbar">
+      <form onSubmit={handleSubmit} className="px-8 pb-8 text-sm text-slate-300 flex-1 overflow-y-auto custom-scrollbar relative z-10">
         
-        <div className="mb-6 bg-black/40 border border-white/5 p-4 rounded-sm relative group">
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-indigo-500/50" />
-          <p className="leading-relaxed font-light text-slate-300">
-            &gt; PLAN A <br/>
-            <input 
-              type="number" 
-              min="1" max="60"
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value) || '')}
-              className="inline-block w-12 bg-transparent border-b border-indigo-500/50 text-indigo-300 text-center mx-1 px-1 focus:outline-none focus:border-indigo-300 font-bold appearance-none"
-              required
-            />
-            -DAY TRIP TO <br/>
-            <input 
-              type="text" 
-              placeholder="Tokyo, Paris..." 
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              className="inline-block w-full bg-transparent border-b border-indigo-500/50 text-indigo-300 focus:outline-none focus:border-indigo-300 mt-2 px-1 pb-1 font-bold tracking-wide"
-              required
-            />
-          </p>
+        {/* Natural Language Input */}
+        <div className="mb-8 mt-4 text-2xl font-light text-slate-200 leading-[1.6]">
+          Plan a <br/>
+          <input 
+            type="number" 
+            min="1" max="60"
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value) || '')}
+            className="inline-block w-14 bg-transparent border-b border-slate-600 text-sky-400 text-center mx-1 px-1 focus:outline-none focus:border-sky-400 appearance-none font-normal"
+            required
+          />
+          -day journey to <br/>
+          <input 
+            type="text" 
+            placeholder="Tokyo, Paris..." 
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            className="inline-block w-full bg-transparent border-b border-slate-600 text-sky-400 focus:outline-none focus:border-sky-400 mt-2 px-1 pb-1 font-normal placeholder:text-slate-600"
+            required
+          />
         </div>
 
-        <div className="mb-6 space-y-2">
-          <label className="text-[10px] text-indigo-400 tracking-widest uppercase block">&gt; BUDGET_REQ_</label>
-          <div className="flex gap-2">
+        <div className="mb-8 space-y-3">
+          <label className="text-xs text-slate-500 uppercase tracking-wider font-medium">Travel Mode</label>
+          <div className="flex gap-2 p-1 bg-black/20 rounded-xl border border-white/5">
             {BUDGETS.map(b => (
               <button
                 key={b.id}
                 type="button"
                 onClick={() => setBudget(b.id)}
-                className={`flex-1 py-1.5 text-[10px] tracking-wider uppercase border transition-all ${
+                className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
                   budget === b.id 
-                    ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200' 
-                    : 'bg-transparent border-white/10 text-slate-500 hover:border-white/30 hover:text-slate-300'
+                    ? 'bg-sky-500/20 text-sky-300 shadow-[0_0_15px_rgba(14,165,233,0.2)]' 
+                    : 'bg-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
                 {b.label}
@@ -102,9 +103,9 @@ export const PlannerPanel: React.FC<Props> = ({ onGenerate, disabled }) => {
           </div>
         </div>
 
-        <div className="mb-6 space-y-2">
-          <label className="text-[10px] text-indigo-400 tracking-widest uppercase block">&gt; STYLE_VECTORS_</label>
-          <div className="flex flex-wrap gap-1.5">
+        <div className="mb-8 space-y-3">
+          <label className="text-xs text-slate-500 uppercase tracking-wider font-medium">Travel Signals</label>
+          <div className="flex flex-wrap gap-2">
             {STYLES.map(style => {
               const isSelected = styles.includes(style);
               return (
@@ -112,10 +113,10 @@ export const PlannerPanel: React.FC<Props> = ({ onGenerate, disabled }) => {
                   key={style}
                   type="button"
                   onClick={() => toggleStyle(style)}
-                  className={`px-2 py-1 text-[10px] tracking-wider uppercase border transition-all ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-300 border ${
                     isSelected 
-                      ? 'bg-purple-500/20 border-purple-400 text-purple-200 shadow-[0_0_10px_rgba(168,85,247,0.3)]' 
-                      : 'bg-transparent border-white/5 text-slate-500 hover:border-white/20'
+                      ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                      : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
                   }`}
                 >
                   {style}
@@ -125,27 +126,26 @@ export const PlannerPanel: React.FC<Props> = ({ onGenerate, disabled }) => {
           </div>
         </div>
 
-        <div className="mb-8 space-y-2">
-          <label className="text-[10px] text-indigo-400 tracking-widest uppercase block">&gt; EXTRA_PARAMS_</label>
+        <div className="mb-8 space-y-3">
+          <label className="text-xs text-slate-500 uppercase tracking-wider font-medium">Extra Prompt</label>
           <textarea 
-            placeholder="e.g. Must include an omakase dinner..." 
+            placeholder="e.g. Include an authentic Omakase dinner experience..." 
             value={extraContext}
             onChange={(e) => setExtraContext(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 p-3 text-slate-300 placeholder:text-slate-700 focus:outline-none focus:border-indigo-500/50 text-xs font-light resize-none h-16"
+            className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-sky-500/50 focus:bg-black/30 transition-all text-sm font-light resize-none h-20"
           />
         </div>
 
         <button 
           type="submit" 
           disabled={disabled || !destination || !days}
-          className="w-full h-12 bg-indigo-600/20 border border-indigo-500 hover:bg-indigo-500/30 text-indigo-300 font-bold text-xs tracking-[0.2em] uppercase flex items-center justify-center gap-2 shadow-[inset_0_0_20px_rgba(99,102,241,0.2)] hover:shadow-[inset_0_0_30px_rgba(99,102,241,0.4)] transition-all disabled:opacity-30 disabled:cursor-not-allowed group relative overflow-hidden"
+          className="w-full h-14 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-medium text-sm tracking-wide flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(14,165,233,0.3)] hover:shadow-[0_15px_40px_rgba(14,165,233,0.5)] transition-all duration-500 disabled:opacity-40 disabled:cursor-not-allowed group relative overflow-hidden"
         >
-          <div className="absolute top-0 bottom-0 left-0 w-1 bg-indigo-400 group-hover:w-2 transition-all" />
-          <ScanText className="w-4 h-4" />
-          INIT_ORBIT_PLAN
+          <Sparkles className="w-4 h-4" />
+          Generate Orbit Journey
           
-          {/* Scanner sweep effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[scan_1.5s_ease-in-out_infinite]" />
+          {/* Sweeping light effect */}
+          <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-[scan_1.5s_ease-in-out_infinite]" />
         </button>
       </form>
     </motion.div>
