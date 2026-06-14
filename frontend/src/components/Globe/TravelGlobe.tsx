@@ -87,45 +87,33 @@ export const TravelGlobe: React.FC<Props> = ({
       .arcStartLng('startLng')
       .arcEndLat('endLat')
       .arcEndLng('endLng')
-      .arcColor(() => ['#0ea5e9', '#6366f1']) // Cyan to Indigo
-      .arcAltitudeAutoScale(0.5)
-      .arcStroke(1.5) // Slightly thicker
-      .arcDashLength(0.6)
-      .arcDashGap(1.5)
-      .arcDashInitialGap(() => Math.random() * 2)
-      .arcDashAnimateTime(2500)
+      .arcColor(() => ['#0ea5e9', '#a855f7'])
+      .arcAltitudeAutoScale(0.3)
+      .arcStroke(1.5)
+      .arcDashLength(0.4)
+      .arcDashGap(0.2)
+      .arcDashAnimateTime(1500)
+      .arcCurveResolution(64)
       .htmlElement((d: any) => {
+        if (appPhase !== 'landing') return document.createElement('div');
+        
+        // Lightweight glassmorphism floating tag
         const el = document.createElement('div');
-        el.className = 'w-72 glass-panel rounded-2xl overflow-hidden transition-all duration-500 ease-out pointer-events-auto cursor-pointer group relative scale-in-center bg-[#020612]/60 backdrop-blur-2xl border border-white/10 shadow-2xl';
-        el.innerHTML = `
-          <div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
-          ${d.image ? `<div class="relative h-36 overflow-hidden p-2 pb-0">
-            <div class="w-full h-full rounded-xl overflow-hidden relative">
-              <div class="absolute inset-0 bg-gradient-to-t from-[#020612] to-transparent z-10"></div>
-              <img src="${d.image}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${d.name}" />
-              <div class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[10px] font-medium text-white/80 border border-white/10">
-                ${d.country}
-              </div>
-            </div>
-          </div>` : ''}
-          <div class="p-5 relative z-20">
-            <h3 class="text-white font-medium text-xl mb-2 tracking-wide">${d.name}</h3>
-            
-            <div class="flex flex-wrap gap-1.5 mb-4">
-              ${d.tags ? d.tags.map((t: string) => `<span class="px-2 py-0.5 rounded-full bg-white/10 border border-white/5 text-[10px] text-slate-300 font-medium">${t}</span>`).join('') : ''}
-              <span class="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/20 text-[10px] text-sky-300 font-medium">${d.days} Days</span>
-            </div>
+        el.className = 'w-max px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-md border border-white/20 text-white shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-[200%]';
+        
+        // Use standard city name and static tags for demo purposes
+        let tags = "City / Explore / Travel";
+        if (d.name === 'Tokyo') tags = "现代都市 / 美食 / 科技";
+        if (d.name === 'Bali') tags = "海岛 / 放松 / 日落";
+        if (d.name === 'Singapore') tags = "花园城市 / 建筑 / 夜景";
+        if (d.name === 'Shanghai') tags = "外滩 / 魔都 / 历史";
 
-            <p class="text-slate-400 text-xs leading-relaxed font-light">
-              <span class="text-sky-400 font-medium text-[10px] uppercase block mb-1">AI Recommendation</span>
-              ${d.description}
-            </p>
+        el.innerHTML = `
+          <div class="flex flex-col gap-0.5 text-center">
+            <span class="text-sm font-medium tracking-wide text-sky-300 drop-shadow-md">${d.name}</span>
+            <span class="text-[10px] text-white/70 font-light tracking-wider">${tags}</span>
           </div>
         `;
-        el.onclick = (e) => {
-          e.stopPropagation();
-          onPlaceClick(d as City);
-        };
         return el;
       });
 
@@ -237,24 +225,31 @@ export const TravelGlobe: React.FC<Props> = ({
   }, [allPoints, displayArcs, displayPlaces, appPhase]);
 
   useEffect(() => {
-    if (!globeRef.current) return;
-    
-    // HTML Card for selected place
     globeRef.current.htmlElementsData(selectedPlace ? [selectedPlace] : []);
     
-    // Pulse rings for ALL places
-    const ringData = selectedPlace ? [selectedPlace] : displayPlaces;
+    // Pulse rings
+    let ringData: any[] = selectedPlace ? [selectedPlace] : displayPlaces;
+
+    // Add a massive scanning ring if generating
+    if (appPhase === 'generating') {
+      ringData = [{
+        lat: 35.6895, // Tokyo as center for scanning
+        lng: 139.6917,
+        isScanner: true
+      }];
+    }
 
     globeRef.current.ringsData(ringData)
       .ringLat('lat')
       .ringLng('lng')
-      .ringColor((d: any) => (t: number) => {
-        if (d === selectedPlace) return `rgba(14, 165, 233, ${1-Math.sqrt(t)})`; // Bright cyan for selected
-        return `rgba(56, 189, 248, ${0.4 - Math.sqrt(t)*0.4})`; // Light cyan
+      .ringColor((d: any) => {
+        if (d.isScanner) return (t: number) => `rgba(168, 85, 247, ${1 - t})`; // Purple scanner
+        if (d === selectedPlace) return (t: number) => `rgba(14, 165, 233, ${1 - Math.sqrt(t)})`;
+        return (t: number) => `rgba(56, 189, 248, ${0.4 - Math.sqrt(t) * 0.4})`;
       })
-      .ringMaxRadius((d: any) => d === selectedPlace ? 12 : 6)
-      .ringPropagationSpeed(3)
-      .ringRepeatPeriod((d: any) => d === selectedPlace ? 800 : 1200);
+      .ringMaxRadius((d: any) => d.isScanner ? 180 : 5)
+      .ringPropagationSpeed((d: any) => d.isScanner ? 5 : 2)
+      .ringRepeatPeriod((d: any) => d.isScanner ? 800 : 1000);
 
     // Camera movement
     if (isAnimating && displayPlaces.length > 0) {

@@ -3,8 +3,8 @@ export type Language = 'zh' | 'en';
 export const translations = {
   zh: {
     // Landing
-    landingTitle: '让 AI 为你规划下一段旅行',
-    landingSubtitle: '输入时间、预算与偏好，在 3D 地球上生成更聪明的路线。',
+    landingTitle: '让 AI 在地球上生成你的下一段旅行',
+    landingSubtitle: '输入时间、预算与偏好，AI 会为你生成可视化的全球路线。',
     startPlanning: '开始规划',
     viewDemo: '查看演示',
     demoSummary: '亚洲灵感路线 · 14天 · 98% 匹配',
@@ -15,16 +15,19 @@ export const translations = {
     signIn: '登录',
     
     // Planner Panel
-    planA: '规划一场',
-    dayJourneyTo: '天旅程，前往',
-    destinationPlaceholder: '例如：东京、巴黎...',
+    promptLabel: '描述你的旅行愿景',
+    promptPlaceholder: '例如：我想从东京出发，14 天，预算中等，想去海岛、美食和小众城市...',
     travelMode: '旅行模式',
     travelSignals: '旅行偏好信号',
-    extraPrompt: '附加指令',
-    extraPromptPlaceholder: '例如：包含一次正宗的 Omakase 晚餐体验...',
-    generateOrbit: '生成轨道行程',
+    generateOrbit: '生成旅行路线',
     moreOptions: '高级选项',
     hideOptions: '收起选项',
+    
+    // HTML Floating Cards (Demo)
+    tokyoTags: '现代都市 / 美食 / 科技',
+    baliTags: '海岛 / 放松 / 日落',
+    singaporeTags: '花园城市 / 建筑 / 夜景',
+    shanghaiTags: '外滩 / 魔都 / 历史',
     
     // Budgets
     budgetLow: '经济',
@@ -43,10 +46,10 @@ export const translations = {
     styleNiche: '小众',
     
     // AI Thinking
-    analyzing: '分析用户意图...',
-    matching: '匹配目的地...',
-    generating: '计算跨城市节奏...',
-    rendering: '合成轨道路径...',
+    analyzing: '正在理解你的旅行偏好...',
+    matching: '正在匹配最佳城市...',
+    generating: '正在计算路线节奏...',
+    rendering: '正在生成 3D 轨道路线...',
     
     // Route List
     aiRouteCandidates: 'AI 推荐路线',
@@ -67,8 +70,8 @@ export const translations = {
   },
   en: {
     // Landing
-    landingTitle: 'Let AI plan your next journey',
-    landingSubtitle: 'Input your time, budget, and preferences to generate smarter routes on a 3D globe.',
+    landingTitle: 'Let AI generate your next journey on Earth',
+    landingSubtitle: 'Input your time, budget, and preferences. AI will generate a visualized global route.',
     startPlanning: 'Start Planning',
     viewDemo: 'View Demo',
     demoSummary: 'Asia Inspiration Route · 14 Days · 98% Match',
@@ -79,16 +82,19 @@ export const translations = {
     signIn: 'Sign In',
     
     // Planner Panel
-    planA: 'Plan a',
-    dayJourneyTo: '-day journey to',
-    destinationPlaceholder: 'Tokyo, Paris...',
+    promptLabel: 'Describe your travel vision',
+    promptPlaceholder: 'e.g., I want a 14-day trip starting from Tokyo, medium budget, focusing on islands, food, and niche cities...',
     travelMode: 'Travel Mode',
     travelSignals: 'Travel Signals',
-    extraPrompt: 'Extra Prompt',
-    extraPromptPlaceholder: 'e.g. Include an authentic Omakase dinner experience...',
-    generateOrbit: 'Generate Orbit Journey',
+    generateOrbit: 'Generate Travel Route',
     moreOptions: 'More Options',
     hideOptions: 'Hide Options',
+    
+    // HTML Floating Cards (Demo)
+    tokyoTags: 'Modern / Food / Tech',
+    baliTags: 'Island / Relax / Sunset',
+    singaporeTags: 'Garden / Architecture / Night',
+    shanghaiTags: 'Bund / Magic City / History',
     
     // Budgets
     budgetLow: 'Econ',
@@ -107,10 +113,10 @@ export const translations = {
     styleNiche: 'Niche',
     
     // AI Thinking
-    analyzing: 'Analyzing intent...',
-    matching: 'Matching destinations...',
+    analyzing: 'Understanding your preferences...',
+    matching: 'Matching optimal cities...',
     generating: 'Calculating route rhythm...',
-    rendering: 'Generating orbit path...',
+    rendering: 'Generating 3D orbital path...',
     
     // Route List
     aiRouteCandidates: 'AI Route Candidates',
