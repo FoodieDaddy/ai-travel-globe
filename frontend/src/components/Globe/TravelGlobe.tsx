@@ -51,9 +51,11 @@ export const TravelGlobe: React.FC<Props> = ({
     const landPositions: number[] = [];
     const landColors: number[] = [];
     const baseSpherePositions: number[] = [];
+    const borderPositions: number[] = [];
     
     const R = 100.15; // 陆地点阵稍微高于球体表面
     const R_base = 100.0; // 海洋底座底面
+    const R_border = 100.22; // 边缘粒子稍微悬空，带来裸眼3D纵深感
     const features = countriesData.features || [];
     
     // 预计算 bounding box 提升检测速度
@@ -81,8 +83,8 @@ export const TravelGlobe: React.FC<Props> = ({
       return { minLng, maxLng, minLat, maxLat, geom };
     });
 
-    // 斐波那契螺旋点阵生成 (12,000 均匀采样点)
-    const numPoints = 12000;
+    // 1. 斐波那契螺旋点阵生成 (增加至 15,000 采样点使大陆内部更密集、对比更鲜明)
+    const numPoints = 15000;
     const goldenRatio = (1 + Math.sqrt(5)) / 2;
     const angleIncrement = 2 * Math.PI * goldenRatio;
 
@@ -128,9 +130,9 @@ export const TravelGlobe: React.FC<Props> = ({
       }
 
       if (inside) {
-        // 大洲陆地点：添加微量 Jitter 避免生成螺旋线纹理，显示为点阵地表数据
-        const jitterLat = (Math.random() - 0.5) * 0.15;
-        const jitterLng = (Math.random() - 0.5) * 0.15;
+        // 大洲陆地点：密度更密、更亮，加入极微量 Jitter 柔化螺旋感
+        const jitterLat = (Math.random() - 0.5) * 0.12;
+        const jitterLng = (Math.random() - 0.5) * 0.12;
         const finalLat = lat + jitterLat;
         const finalLng = lng + jitterLng;
 
@@ -143,14 +145,14 @@ export const TravelGlobe: React.FC<Props> = ({
 
         landPositions.push(px, py, pz);
 
-        // 顶点颜色渐变
+        // 顶点色彩线性插值，融合暖橙、亮蓝与冷白光
         const tCol = (px / R + 1) / 2;
         const mixedColor = new THREE.Color().copy(leftColor).lerp(rightColor, tCol);
-        mixedColor.lerp(starColor, 0.45); // 混合冷白银光
+        mixedColor.lerp(starColor, 0.5); // 增加亮色白光权重使其更亮
         landColors.push(mixedColor.r, mixedColor.g, mixedColor.b);
       } else {
-        // 海洋底座点：以 25% 概率保留生成稀疏微尘，勾勒球体形状
-        if (Math.random() < 0.25) {
+        // 海洋底座点：降低保留概率至 10%，使其显著更暗、更稀疏，仅起到弱化球体定位轮廓作用
+        if (Math.random() < 0.10) {
           const px = R_base * x;
           const py = R_base * y;
           const pz = R_base * z;
@@ -159,10 +161,52 @@ export const TravelGlobe: React.FC<Props> = ({
       }
     }
 
+    // 2. 提取并插值大洲边缘海岸线上的粒子点 (更细密、更亮以勾勒大陆地表结构)
+    features.forEach((f: any) => {
+      const geom = f.geometry;
+      if (!geom) return;
+      
+      const processRing = (ring: number[][]) => {
+        for (let i = 0; i < ring.length - 1; i++) {
+          const p1 = ring[i];
+          const p2 = ring[i + 1];
+          const dLng = p2[0] - p1[0];
+          const dLat = p2[1] - p1[1];
+          const dist = Math.sqrt(dLng * dLng + dLat * dLat);
+          
+          // 根据地理度数距离进行沿线插值，步长大约 0.85 度
+          const steps = Math.max(1, Math.floor(dist / 0.85));
+          for (let s = 0; s <= steps; s++) {
+            const t = s / steps;
+            const lng = p1[0] + dLng * t;
+            const lat = p1[1] + dLat * t;
+            
+            const latRad = (lat * Math.PI) / 180;
+            const lngRad = (lng * Math.PI) / 180;
+            
+            const px = R_border * Math.cos(latRad) * Math.cos(lngRad);
+            const py = R_border * Math.cos(latRad) * Math.sin(lngRad);
+            const pz = R_border * Math.sin(latRad);
+            
+            borderPositions.push(px, py, pz);
+          }
+        }
+      };
+      
+      if (geom.type === 'Polygon') {
+        geom.coordinates.forEach((ring: number[][]) => processRing(ring));
+      } else if (geom.type === 'MultiPolygon') {
+        geom.coordinates.forEach((poly: number[][][]) => {
+          poly.forEach((ring: number[][]) => processRing(ring));
+        });
+      }
+    });
+
     return {
       landPositions: new Float32Array(landPositions),
       landColors: new Float32Array(landColors),
-      baseSpherePositions: new Float32Array(baseSpherePositions)
+      baseSpherePositions: new Float32Array(baseSpherePositions),
+      borderPositions: new Float32Array(borderPositions)
     };
   }, []);
 
@@ -289,11 +333,24 @@ export const TravelGlobe: React.FC<Props> = ({
       color: 0x2e4057, // 灰蓝微尘
       size: 0.45,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.10, // 略微降低海洋微尘亮度
       sizeAttenuation: true
     });
     const baseMesh = new THREE.Points(baseGeometry, baseMaterial);
     globe.scene().add(baseMesh);
+
+    // 7.5. 大洲边缘轮廓线粒子点阵生成叠加 (高可见度描边，更细、更亮)
+    const borderGeometry = new THREE.BufferGeometry();
+    borderGeometry.setAttribute('position', new THREE.BufferAttribute(globeData.borderPositions, 3));
+    const borderMaterial = new THREE.PointsMaterial({
+      color: 0xa5f3fc, // 极亮青白小星光
+      size: 0.55,      // 更细
+      transparent: true,
+      opacity: 0.75,   // 极亮
+      sizeAttenuation: true
+    });
+    const borderMesh = new THREE.Points(borderGeometry, borderMaterial);
+    globe.scene().add(borderMesh);
 
     // 8. 地球底座材质 (深色透明球体底)
     const globeMaterial = globe.globeMaterial();
