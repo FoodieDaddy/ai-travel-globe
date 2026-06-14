@@ -9,25 +9,26 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
     if (!containerRef.current) return;
 
     const globe = Globe()(containerRef.current)
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
       .showAtmosphere(true)
-      .atmosphereColor('#3b82f6')
-      .atmosphereAltitude(0.2)
+      .atmosphereColor('#2563eb')
+      .atmosphereAltitude(0.25)
       .pointsData(places)
       .pointLat('lat')
       .pointLng('lng')
-      .pointRadius(0.5)
-      .pointAltitude(0.01)
-      .pointColor(() => '#60a5fa')
+      .pointRadius(0.8)
+      .pointAltitude(0.02)
+      .pointColor(() => '#38bdf8')
+      .pointGlowRadius(2)
       .onPointClick(onPlaceClick)
       .arcsData(arcs)
       .arcStartLat('startLat')
       .arcStartLng('startLng')
       .arcEndLat('endLat')
       .arcEndLng('endLng')
-      .arcColor(() => ['#3b82f6', '#8b5cf6'])
-      .arcAltitude(0.3)
+      .arcColor(() => ['#38bdf8', '#c084fc'])
+      .arcAltitude(0.35)
       .arcDashLength(0.4)
       .arcDashGap(2)
       .arcDashAnimateTime(2000)
@@ -46,7 +47,8 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
       });
 
     globe.controls().autoRotate = true;
-    globe.controls().autoRotateSpeed = 0.5;
+    globe.controls().autoRotateSpeed = 0.3;
+    globe.controls().enableZoom = false; // Disable zoom to keep it looking cinematic like the video
     globeRef.current = globe;
 
     // Handle resize
@@ -83,15 +85,15 @@ export function GlobeView({ places, arcs, selectedPlace, onPlaceClick }) {
     globeRef.current.ringsData(selectedPlace ? [selectedPlace] : [])
       .ringLat('lat')
       .ringLng('lng')
-      .ringColor(() => t => `rgba(96, 165, 250, ${1-t})`)
-      .ringMaxRadius(5)
-      .ringPropagationSpeed(3)
-      .ringRepeatPeriod(1000);
+      .ringColor(() => t => `rgba(56, 189, 248, ${1-t})`)
+      .ringMaxRadius(8)
+      .ringPropagationSpeed(4)
+      .ringRepeatPeriod(800);
 
     if (selectedPlace) {
       globeRef.current.pointOfView(
-        { lat: selectedPlace.lat, lng: selectedPlace.lng, altitude: 1.5 },
-        1200
+        { lat: selectedPlace.lat, lng: selectedPlace.lng, altitude: 1.8 },
+        1500
       );
     }
   }, [selectedPlace]);

@@ -7,9 +7,9 @@ import { demoPlan } from './data/demoPlan';
 import axios from 'axios';
 
 function App() {
-  const [plan, setPlan] = useState(null);
+  const [plan, setPlan] = useState(demoPlan);
   const [loading, setLoading] = useState(false);
-  const [selectedPlaceId, setSelectedPlaceId] = useState(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState(demoPlan.places[0].id);
   const [error, setError] = useState(null);
 
   const selectedPlace = plan?.places?.find(p => p.id === selectedPlaceId);
@@ -66,9 +66,10 @@ function App() {
             {plan && (
               <button 
                 onClick={() => { setPlan(null); setError(null); }}
-                className="bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur px-6 py-3 rounded-xl border border-white/10 transition-all shadow-2xl cursor-pointer font-medium"
+                className="bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur px-6 py-3 rounded-xl border border-white/10 transition-all shadow-2xl cursor-pointer font-medium flex items-center gap-2"
               >
-                重新生成路线
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                重新规划路线
               </button>
             )}
           </div>
