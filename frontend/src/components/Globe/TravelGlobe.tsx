@@ -201,6 +201,30 @@ export const TravelGlobe: React.FC<Props> = ({
 
   useEffect(() => {
     if (!globeRef.current) return;
+    const controls = globeRef.current.controls();
+    controls.enableZoom = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5; // Slow rotation for presentation
+  }, []);
+
+  // Breathing effect on altitude
+  useEffect(() => {
+    if (!globeRef.current) return;
+    let frameId: number;
+
+    const animate = () => {
+      // Small breathing effect by subtly moving the point of view if no user interaction
+      // Actually autoRotate handles rotation, we can just let it be. 
+      // If we want actual breathing altitude, we can adjust setPointOfView, but it might fight with controls.
+      // Let's just rely on autoRotate for the dynamic feel, it's very effective and smooth.
+      frameId = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
+    if (!globeRef.current) return;
     globeRef.current.pointsData(allPoints);
     globeRef.current.arcsData(displayArcs);
     

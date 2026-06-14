@@ -3,9 +3,11 @@ export type Language = 'zh' | 'en';
 export const translations = {
   zh: {
     // Landing
-    landingTitle: '全球轨迹',
-    landingSubtitle: '由人工智能驱动的未来旅行操作系统。',
+    landingTitle: '让 AI 为你规划下一段旅行',
+    landingSubtitle: '输入时间、预算与偏好，在 3D 地球上生成更聪明的路线。',
     startPlanning: '开始规划',
+    viewDemo: '查看演示',
+    demoSummary: '亚洲灵感路线 · 14天 · 98% 匹配',
     
     // Header
     appName: 'Travel OS',
@@ -65,9 +67,11 @@ export const translations = {
   },
   en: {
     // Landing
-    landingTitle: 'Orbit the World',
-    landingSubtitle: 'The premium AI travel operating system for the future.',
+    landingTitle: 'Let AI plan your next journey',
+    landingSubtitle: 'Input your time, budget, and preferences to generate smarter routes on a 3D globe.',
     startPlanning: 'Start Planning',
+    viewDemo: 'View Demo',
+    demoSummary: 'Asia Inspiration Route · 14 Days · 98% Match',
     
     // Header
     appName: 'Travel OS',

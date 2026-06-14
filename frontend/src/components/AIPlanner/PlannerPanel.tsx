@@ -37,7 +37,7 @@ export const PlannerPanel: React.FC<Props> = ({ onGenerate, disabled }) => {
       initial={{ x: -50, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="w-[440px] pointer-events-auto flex flex-col font-sans bg-[#020612]/30 backdrop-blur-[40px] rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative"
+      className="w-[380px] pointer-events-auto flex flex-col font-sans bg-[#020612]/30 backdrop-blur-[40px] rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden relative"
     >
       {/* Subtle Noise Overlay inside the panel */}
       <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none" style={{
