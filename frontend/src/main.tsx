@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App.tsx'
 import ChinaMemoryPage from './pages/ChinaMemoryPage.tsx'
 import './index.css'
-import { LanguageProvider } from './i18n/LanguageContext.tsx'
+import { LanguageProvider } from './i18n/LanguageContext'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
