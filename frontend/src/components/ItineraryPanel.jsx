@@ -4,7 +4,7 @@ export function ItineraryPanel({ plan, selectedPlaceId, onPlaceSelect }) {
   if (!plan) return null;
 
   return (
-    <div className="bg-slate-900/90 backdrop-blur-xl flex flex-col h-full border-l border-white/10 w-[380px] shadow-2xl overflow-hidden relative">
+    <div className="bg-[#0B1120]/85 backdrop-blur-2xl flex flex-col h-full w-[380px] shadow-[-20px_0_40px_rgba(0,0,0,0.5)] overflow-hidden relative border-l border-blue-500/10">
       {/* Header */}
       <div className="p-6 border-b border-white/10 flex-shrink-0 bg-gradient-to-b from-blue-900/40 to-transparent relative z-10">
         <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
@@ -50,8 +50,8 @@ export function ItineraryPanel({ plan, selectedPlaceId, onPlaceSelect }) {
                   {/* Card */}
                   <div className={`p-4 rounded-xl transition-all border ${
                     isSelected 
-                      ? 'bg-slate-800/80 border-blue-500/50 shadow-lg' 
-                      : 'bg-slate-800/40 border-white/5 hover:bg-slate-800/60 hover:border-white/10'
+                      ? 'bg-blue-900/20 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]' 
+                      : 'bg-slate-800/30 border-white/5 hover:bg-slate-800/50 hover:border-white/10'
                   }`}>
                     {/* Header */}
                     <div className="flex justify-between items-start mb-2">

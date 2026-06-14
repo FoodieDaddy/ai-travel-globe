@@ -29,7 +29,7 @@ export function AudioPlayerPanel({ selectedPlace }) {
   if (!selectedPlace) return null;
 
   return (
-    <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl w-80 shadow-2xl transition-all duration-500 hover:bg-slate-800/90 pointer-events-auto">
+    <div className="bg-[#0B1120]/85 backdrop-blur-2xl border border-blue-500/20 p-4 rounded-2xl w-80 shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-500 hover:bg-[#0B1120]/95 pointer-events-auto">
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-2">
           <div className="bg-blue-500/20 p-2 rounded-lg border border-blue-500/30">
