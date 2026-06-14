@@ -12,6 +12,7 @@ interface Props {
   hoveredRouteArcs?: any[];
   onPlaceClick: (city: City) => void;
   isAnimating?: boolean;
+  appPhase?: 'landing' | 'planning' | 'generating' | 'result';
 }
 
 export const TravelGlobe: React.FC<Props> = ({ 
@@ -21,7 +22,8 @@ export const TravelGlobe: React.FC<Props> = ({
   hoveredRoutePlaces = [],
   hoveredRouteArcs = [],
   onPlaceClick,
-  isAnimating = false
+  isAnimating = false,
+  appPhase = 'planning'
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<any>(null);
@@ -201,8 +203,14 @@ export const TravelGlobe: React.FC<Props> = ({
     if (!globeRef.current) return;
     globeRef.current.pointsData(allPoints);
     globeRef.current.arcsData(displayArcs);
-    globeRef.current.labelsData(displayPlaces);
-  }, [allPoints, displayArcs, displayPlaces]);
+    
+    // Only show labels in result phase or during animation
+    if (appPhase === 'result' || appPhase === 'generating') {
+      globeRef.current.labelsData(displayPlaces);
+    } else {
+      globeRef.current.labelsData([]);
+    }
+  }, [allPoints, displayArcs, displayPlaces, appPhase]);
 
   useEffect(() => {
     if (!globeRef.current) return;

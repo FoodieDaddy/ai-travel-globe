@@ -2,12 +2,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { TravelRoute } from '../../types/travel';
 import { MapPin } from 'lucide-react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface Props {
   route: TravelRoute;
 }
 
 export const ItineraryTimeline: React.FC<Props> = ({ route }) => {
+  const { t } = useLanguage();
+  
   if (!route.places || route.places.length === 0) return null;
 
   return (
@@ -20,7 +23,7 @@ export const ItineraryTimeline: React.FC<Props> = ({ route }) => {
       <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-3">
         <MapPin className="w-4 h-4 text-sky-400" />
         <h3 className="text-sm font-medium text-white tracking-wide">
-          Journey Timeline
+          {t('journeyTimeline')}
         </h3>
       </div>
       
@@ -41,7 +44,7 @@ export const ItineraryTimeline: React.FC<Props> = ({ route }) => {
                   </h4>
                   <div className="flex-1 border-b border-dashed border-white/10 translate-y-[-4px]" />
                   <span className="text-xs font-medium text-sky-400">
-                    Days {startDay}{startDay !== endDay ? `-${endDay}` : ''}
+                    {t('days')} {startDay}{startDay !== endDay ? `-${endDay}` : ''}
                   </span>
                 </div>
                 
