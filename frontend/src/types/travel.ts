@@ -35,6 +35,12 @@ export interface TravelRoute {
     title: string;
     items: string[];
   }[];
+  matchScore?: number;
+  mood?: string;
+  pace?: string;
+  costIndex?: string;
+  seasonFit?: string;
+  aiConfidence?: string;
 }
 
 export interface TravelPreference {

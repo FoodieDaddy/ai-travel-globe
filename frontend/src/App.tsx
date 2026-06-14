@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Background } from './components/Layout/Background';
 import { Header } from './components/Layout/Header';
 import { PlannerPanel } from './components/AIPlanner/PlannerPanel';
@@ -15,27 +15,33 @@ export const App: React.FC = () => {
   const [hoveredRoute, setHoveredRoute] = useState<TravelRoute | null>(null);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
 
-  // Note: Creating service inside component is usually bad practice as it resets state,
-  // but it's acceptable for this simple mock demo. Using useMemo to prevent recreation.
+  // New state for progressive rendering
+  const [renderStep, setRenderStep] = useState<number>(-1); // -1 means all rendered
+
   const plannerService = React.useMemo(() => new AIPlannerMockService((result) => {
     setPlanState(result);
+    
     if (result.status === 'success' && result.data) {
       setActiveRoute(result.data);
       setSelectedCity(null);
+      // Start sequential animation
+      setRenderStep(0);
     }
   }), []);
 
   const handleGenerate = (pref: TravelPreference) => {
     setSelectedCity(null);
+    setActiveRoute(null);
+    setRenderStep(-1);
     plannerService.generatePlan(pref);
   };
 
   const handleSelectRoute = (route: TravelRoute) => {
     if (activeRoute?.id === route.id) {
-      // Toggle off if clicking the same route
       setActiveRoute(null);
     } else {
       setActiveRoute(route);
+      setRenderStep(0); // Trigger sequence on click as well for cool effect
     }
     setSelectedCity(null);
     setPlanState({ status: 'idle' }); 
@@ -45,9 +51,33 @@ export const App: React.FC = () => {
     setHoveredRoute(route);
   };
 
-  const activePoints = activeRoute?.places || [];
-  const activeArcs = activeRoute?.arcs || [];
-  
+  // Handle Progressive Rendering of Route
+  useEffect(() => {
+    if (renderStep >= 0 && activeRoute) {
+      const maxSteps = activeRoute.places.length + activeRoute.arcs.length;
+      if (renderStep < maxSteps) {
+        const timer = setTimeout(() => {
+          setRenderStep(prev => prev + 1);
+        }, 1200); // 1.2s per segment
+        return () => clearTimeout(timer);
+      } else {
+        // Animation complete
+        setRenderStep(-1);
+      }
+    }
+  }, [renderStep, activeRoute]);
+
+  // Compute displayed points and arcs based on renderStep
+  let activePoints = activeRoute?.places || [];
+  let activeArcs = activeRoute?.arcs || [];
+
+  if (renderStep >= 0 && activeRoute) {
+    const pCount = Math.floor(renderStep / 2) + 1;
+    const aCount = Math.floor((renderStep - 1) / 2) + 1;
+    activePoints = activeRoute.places.slice(0, Math.max(0, pCount));
+    activeArcs = activeRoute.arcs.slice(0, Math.max(0, aCount));
+  }
+
   const hoveredPoints = hoveredRoute?.places || [];
   const hoveredArcs = hoveredRoute?.arcs || [];
 
@@ -65,6 +95,7 @@ export const App: React.FC = () => {
           hoveredRoutePlaces={hoveredPoints}
           hoveredRouteArcs={hoveredArcs}
           onPlaceClick={(city) => setSelectedCity(city)}
+          isAnimating={renderStep >= 0}
         />
       </div>
 

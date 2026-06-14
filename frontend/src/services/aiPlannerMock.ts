@@ -10,19 +10,19 @@ export class AIPlannerMockService {
 
   async generatePlan(pref: TravelPreference) {
     // Stage 1: Analyzing
-    this.updateCallback({ status: 'analyzing', message: '正在分析季节与预算...' });
+    this.updateCallback({ status: 'analyzing', message: 'ANALYZING USER INTENT...' });
     await this.delay(1200);
 
     // Stage 2: Matching
-    this.updateCallback({ status: 'matching', message: '正在匹配城市节奏...' });
+    this.updateCallback({ status: 'matching', message: 'MATCHING DESTINATIONS...' });
     await this.delay(1500);
 
     // Stage 3: Generating
-    this.updateCallback({ status: 'generating', message: '正在计算跨城市路线...' });
+    this.updateCallback({ status: 'generating', message: 'CALCULATING CITY RHYTHM...' });
     await this.delay(1500);
 
     // Stage 4: Rendering
-    this.updateCallback({ status: 'generating', message: '正在生成 3D 飞线...' });
+    this.updateCallback({ status: 'generating', message: 'SYNTHESIZING ORBIT ROUTE...' });
     await this.delay(1000);
 
     // Stage 4: Success (Mock data selection based on region roughly)
